@@ -554,7 +554,20 @@ function showTab(name) {
 // ════════════════════════════════════════════════════════════════════
 //  API
 // ════════════════════════════════════════════════════════════════════
-// ── API helpers ───────────────────────────────────────────────────────
+// ── Thời gian Hà Nội (UTC+7) ─────────────────────────────────────────
+function vnNow() {
+  // Cộng thêm 7 giờ vào UTC, gắn offset +07:00 để rõ múi giờ
+  const d = new Date();
+  const vn = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return vn.toISOString().replace("Z", "+07:00");
+}
+function vnTimestamp(isoStr) {
+  // Hiển thị timestamp dạng HH:mm theo giờ Hà Nội
+  if (!isoStr) return "";
+  return new Date(isoStr).toLocaleTimeString("vi-VN", {
+    hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh"
+  });
+}
 // Apps Script LUÔN trả 302 redirect sang googleusercontent.com.
 // fetch() tự follow redirect và GIỮ NGUYÊN method/body (khác với curl).
 // KHÔNG cache redirected URL — vì URL echo chứa user_content_key động,
@@ -815,7 +828,7 @@ function getFormData(){
   const tl={};
   (CFG.tlList||[]).forEach(({cau,yi})=>{tl[cau]={};for(let k=0;k<yi;k++){const el=document.getElementById(`tli-${cau}-${YI[k]}`);tl[cau][YI[k]]=el?el.value.trim():"";} });
   const mcq={};for(let i=1;i<=CFG.nMCQ;i++)mcq[i]=[...(mcqSt[i]||[])];
-  return{group:CFG.group,maDe:document.getElementById("ma-de").value.trim().toUpperCase(),mssv:document.getElementById("mssv").value.trim().toUpperCase(),hoTen:document.getElementById("hoten").value.trim(),lop:document.getElementById("lop").value.trim(),nguoiNhap:document.getElementById("nguoi-nhap").value.trim(),timestamp:new Date().toISOString(),mcq,tl};
+  return{group:CFG.group,maDe:document.getElementById("ma-de").value.trim().toUpperCase(),mssv:document.getElementById("mssv").value.trim().toUpperCase(),hoTen:document.getElementById("hoten").value.trim(),lop:document.getElementById("lop").value.trim(),nguoiNhap:document.getElementById("nguoi-nhap").value.trim(),timestamp:vnNow(),mcq,tl};
 }
 function loadFormData(d){
   document.getElementById("ma-de").value=d.maDe||"";document.getElementById("mssv").value=d.mssv||"";document.getElementById("hoten").value=d.hoTen||"";document.getElementById("lop").value=d.lop||"";
@@ -842,7 +855,7 @@ async function saveEntry(){
   try{
     const r=await apiPost({action:"saveEntry",entry:d});
     if(r.ok){
-      const idx=entries.findIndex(e=>e.mssv===d.mssv&&e.maDe===d.maDe);
+      const idx=entries.findIndex(e=>String(e.mssv)===String(d.mssv)&&String(e.maDe)===String(d.maDe));
       if(idx>=0)entries[idx]=d; else entries.push(d);
       renderList();updateStatsBar();updateNavCount();
       clearForm();setApiStatus("ok","Đã lưu");
@@ -859,7 +872,7 @@ async function syncNow(){
     const r=await apiGet({action:"listEntries",group:CFG.group});
     if(r.ok){
       entries=r.entries||[];renderList();updateStatsBar();updateNavCount();
-      const t=new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"});
+      const t=new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Ho_Chi_Minh"});
       setApiStatus("ok",`${entries.length} bài · ${t}`);
       const byUser={};entries.forEach(e=>{byUser[e.nguoiNhap||"?"]=(byUser[e.nguoiNhap||"?"]||0)+1;});
       document.getElementById("stats-by-user").textContent=
@@ -879,12 +892,12 @@ function renderList(){
   document.getElementById("list-total").textContent=entries.length;
   if(!entries.length){wrap.innerHTML='<div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Chưa có bài nào</div>';return;}
   const isAdmin=ROLE==="admin";
-  const sorted=[...entries].sort((a,b)=>(a.mssv||"").localeCompare(b.mssv||""));
+  const sorted=[...entries].sort((a,b)=>String(a.mssv||"").localeCompare(String(b.mssv||"")));
   wrap.innerHTML=sorted.map(e=>{
     let mc=0;if(CFG)for(let i=1;i<=CFG.nMCQ;i++)if(e.mcq&&e.mcq[i]&&e.mcq[i].length)mc++;
     const totalYi=CFG?(CFG.tlList||[]).reduce((s,t)=>s+t.yi,0):0;
     let tlOk=0;if(CFG)(CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++)if(e.tl&&e.tl[cau]&&e.tl[cau][YI[k]]&&e.tl[cau][YI[k]].trim())tlOk++;});
-    const ts=e.timestamp?new Date(e.timestamp).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}):"";
+    const ts=vnTimestamp(e.timestamp);
     const delBtn=isAdmin?`<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();delEntry('${e.mssv}','${e.maDe}')" title="Xoá bài này">✕</button>`:`<span></span>`;
     return`<div class="entry-row" onclick="editFromList('${e.mssv}','${e.maDe}')">
       <span class="badge badge-blue">${e.maDe||"?"}</span>
@@ -899,7 +912,7 @@ function renderList(){
 }
 
 function editFromList(mssv,maDe){
-  const idx=entries.findIndex(e=>e.mssv===mssv&&e.maDe===maDe);
+  const idx=entries.findIndex(e=>String(e.mssv)===String(mssv)&&String(e.maDe)===String(maDe));
   if(idx<0)return;curIdx=idx;loadFormData(entries[idx]);updateRecCtr();showTab("form");
 }
 
@@ -908,7 +921,7 @@ async function delEntry(mssv,maDe){
   if(!confirm(`Xoá bài của ${mssv} (mã đề ${maDe})?`))return;
   try{
     const r=await apiPost({action:"deleteEntry",group:CFG.group,mssv,maDe});
-    if(r.ok){entries=entries.filter(e=>!(e.mssv===mssv&&e.maDe===maDe));renderList();updateStatsBar();updateNavCount();toast(`Đã xoá ${mssv}`);}
+    if(r.ok){entries=entries.filter(e=>!(String(e.mssv)===String(mssv)&&String(e.maDe)===String(maDe)));renderList();updateStatsBar();updateNavCount();toast(`Đã xoá ${mssv}`);}
     else toast("Lỗi: "+(r.error||"?"));
   }catch(e){toast("Lỗi mạng");}
 }
@@ -953,7 +966,7 @@ function exportCSV(){
   });
   const blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);const a=document.createElement("a");
-  const ts=new Date().toISOString().slice(0,16).replace(/[-T:]/g,"").slice(0,13);
+  const ts=new Date(new Date().getTime()+7*60*60*1000).toISOString().slice(0,16).replace(/[-T:]/g,"").slice(0,13);
   a.href=url;a.download=`bai_lam_${CFG?CFG.group:"export"}_${ts}.csv`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   toast(`Xuất ${entries.length} bài → CSV`);
