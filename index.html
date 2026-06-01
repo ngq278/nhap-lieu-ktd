@@ -416,7 +416,6 @@ async function doLogin() {
 
   // Set tạm để apiGet có URL dùng (cần trước khi gọi)
   API_URL = url; TOKEN = token;
-  _RESOLVED_URL = ""; // reset để tự detect redirect mới
 
   setApiStatus("","Đang kiểm tra...");
   try {
@@ -556,13 +555,13 @@ function showTab(name) {
 //  API
 // ════════════════════════════════════════════════════════════════════
 // ── API helpers ───────────────────────────────────────────────────────
-// Apps Script GET redirect: script.google.com → script.googleusercontent.com
-// Fix: lưu lại redirected URL sau request đầu tiên thành công,
-//      dùng URL đó cho tất cả request tiếp theo (tránh redirect mỗi lần).
+// Apps Script LUÔN trả 302 redirect sang googleusercontent.com.
+// fetch() tự follow redirect và GIỮ NGUYÊN method/body (khác với curl).
+// KHÔNG cache redirected URL — vì URL echo chứa user_content_key động,
+// cắt query sẽ làm hỏng request sau. Cứ để fetch tự xử lý mỗi lần.
 // POST: Content-Type text/plain → simple request, không có CORS preflight.
 
 const _FETCH_TIMEOUT = 20000; // 20s
-let _RESOLVED_URL = ""; // URL sau redirect, tự cập nhật lần đầu
 
 function _fetchWithTimeout(url, opts) {
   const controller = new AbortController();
@@ -573,53 +572,42 @@ function _fetchWithTimeout(url, opts) {
 
 async function apiGet(params, retries = 2) {
   if (TOKEN) params.token = TOKEN;
-  // Dùng resolved URL nếu đã có (bỏ qua redirect overhead)
-  const base = _RESOLVED_URL || API_URL;
-  const url  = base + "?" + new URLSearchParams(params);
+  const url = API_URL + "?" + new URLSearchParams(params);
+  let lastErr;
   for (let i = 0; i <= retries; i++) {
     try {
       const r = await _fetchWithTimeout(url, { redirect: "follow" });
-      // Lưu lại URL sau redirect để dùng cho các lần sau
-      if (r.url && r.url !== url && !_RESOLVED_URL) {
-        // Lấy phần base (bỏ query string)
-        _RESOLVED_URL = r.url.split("?")[0];
-      }
       if (!r.ok) throw new Error("HTTP " + r.status);
       return await r.json();
     } catch(e) {
+      lastErr = e;
       if (e.name === "AbortError") throw new Error("Hết thời gian chờ — kiểm tra URL API");
-      // Nếu lỗi khi dùng resolved URL, thử lại với URL gốc
-      if (_RESOLVED_URL && i === 0) { _RESOLVED_URL = ""; continue; }
-      if (i === retries) throw e;
-      await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+      if (i < retries) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
     }
   }
+  throw lastErr;
 }
 
 async function apiPost(body, retries = 2) {
   if (TOKEN) body.token = TOKEN;
-  // Dùng resolved URL nếu đã có
-  const base = _RESOLVED_URL || API_URL;
+  let lastErr;
   for (let i = 0; i <= retries; i++) {
     try {
-      const r = await _fetchWithTimeout(base, {
-        method:  "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body:    JSON.stringify(body),
+      const r = await _fetchWithTimeout(API_URL, {
+        method:   "POST",
+        headers:  { "Content-Type": "text/plain;charset=utf-8" },
+        body:     JSON.stringify(body),
         redirect: "follow",
       });
-      if (r.url && r.url !== base && !_RESOLVED_URL) {
-        _RESOLVED_URL = r.url.split("?")[0];
-      }
       if (!r.ok) throw new Error("HTTP " + r.status);
       return await r.json();
     } catch(e) {
+      lastErr = e;
       if (e.name === "AbortError") throw new Error("Hết thời gian chờ — kiểm tra URL API");
-      if (_RESOLVED_URL && i === 0) { _RESOLVED_URL = ""; continue; }
-      if (i === retries) throw e;
-      await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+      if (i < retries) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
     }
   }
+  throw lastErr;
 }
 
 function setApiStatus(state, msg) {
@@ -1278,7 +1266,6 @@ document.addEventListener("keydown", e => {
   if (resolvedUrl && savedRole && savedUrl === resolvedUrl) {
     // Cùng URL → khôi phục session, bỏ qua màn login
     API_URL = resolvedUrl; TOKEN = savedToken; ROLE = savedRole;
-    _RESOLVED_URL = ""; // reset để tự detect redirect
     document.getElementById("login-token").value = savedToken;
     afterLogin();
   } else if (resolvedUrl) {
