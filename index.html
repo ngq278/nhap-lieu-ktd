@@ -1307,7 +1307,7 @@ async function loadKyThiAdminList() {
   const wrap = document.getElementById("ky-list-wrap");
   wrap.innerHTML = "Đang tải...";
   try {
-    const r = await apiGet({ action: "listKyThi" });
+    const r = await apiGet({ action: "listKyThi", token: TOKEN });
     if (!r.ok || !r.kyList.length) {
       wrap.innerHTML = '<span style="color:var(--text3)">Chưa có kỳ thi nào</span>'; return;
     }
