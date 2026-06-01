@@ -414,16 +414,21 @@ async function doLogin() {
   errEl.style.display = "none";
   if (!url) { showLoginErr("Không tìm thấy URL API — liên hệ admin!"); return; }
 
+  // Set tạm để apiGet có URL dùng (cần trước khi gọi)
+  API_URL = url; TOKEN = token;
+  _RESOLVED_URL = ""; // reset để tự detect redirect mới
+
   setApiStatus("","Đang kiểm tra...");
   try {
-    const r = await fetch(`${url}?action=ping&token=${encodeURIComponent(token)}`);
-    const d = await r.json();
-    if (!d.ok && d.role === undefined) { showLoginErr("API phản hồi không hợp lệ"); return; }
+    const d = await apiGet({ action: "ping" });
+    if (!d || (d.ok === undefined && d.role === undefined)) {
+      showLoginErr("API phản hồi không hợp lệ"); return;
+    }
     const role = d.role || "readonly";
     if (role === "denied") { showLoginErr("Token không hợp lệ!"); return; }
 
-    // Lưu session
-    API_URL = url; TOKEN = token; ROLE = role;
+    // Xác nhận session
+    ROLE = role;
     sessionStorage.setItem("api_url", url);
     sessionStorage.setItem("token",   token);
     sessionStorage.setItem("role",    role);
@@ -1273,6 +1278,7 @@ document.addEventListener("keydown", e => {
   if (resolvedUrl && savedRole && savedUrl === resolvedUrl) {
     // Cùng URL → khôi phục session, bỏ qua màn login
     API_URL = resolvedUrl; TOKEN = savedToken; ROLE = savedRole;
+    _RESOLVED_URL = ""; // reset để tự detect redirect
     document.getElementById("login-token").value = savedToken;
     afterLogin();
   } else if (resolvedUrl) {
