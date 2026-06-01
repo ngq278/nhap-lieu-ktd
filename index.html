@@ -990,8 +990,8 @@ function exportXLSX(){
   for(let i=1;i<=CFG.nMCQ;i++) headers.push(`Câu ${i}`);
   (CFG.tlList||[]).forEach(({cau,yi})=>{
     for(let k=0;k<yi;k++){
-      const label=["(a)","(b)","(c)","(d)","(e)","(f)"][k]||\`(${k+1})\`;
-      headers.push(\`Câu ${cau} — ý ${label} — Đáp số SV\`);
+      const label=["(a)","(b)","(c)","(d)","(e)","(f)"][k]||`(${k+1})`;
+      headers.push(`Câu ${cau} — ý ${label} — Đáp số SV`);
     }
   });
   headers.push("Người nhập");
@@ -1065,9 +1065,9 @@ function exportXLSX(){
   const sheetName=(CFG.group||"BaiLam").slice(0,31); // Sheet name max 31 chars
   XLSX.utils.book_append_sheet(wb,ws,sheetName);
 
-  const filename=\`bai_lam_${CFG?CFG.group:"export"}_\${ts}.xlsx\`;
+  const filename=`bai_lam_${CFG?CFG.group:"export"}_${ts}.xlsx`;
   XLSX.writeFile(wb,filename);
-  toast(\`Xuất ${entries.length} bài → Excel ✓\`);
+  toast(`Xuất ${entries.length} bài → Excel ✓`);
 }
 
 // ════════════════════════════════════════════════════════════════════
