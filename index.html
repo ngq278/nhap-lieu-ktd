@@ -603,8 +603,37 @@ async function apiGet(params, retries = 2) {
 }
 
 async function apiPost(body, retries = 2) {
-  // Apps Script 302 redirect làm POST mất body → dùng GET + payload.
-  // Tách action/token ra param riêng, phần còn lại đóng gói vào payload.
+  // Chiến lược: thử POST (body JSON, Content-Type: text/plain để bypass CORS preflight)
+  // trước — Apps Script doPost xử lý tốt, không bị giới hạn URL.
+  // Fallback về GET+payload nếu POST bị chặn (một số môi trường corp proxy).
+  if (TOKEN) body.token = body.token || TOKEN;
+
+  let lastErr;
+
+  // ── Thử POST trước ───────────────────────────────────────────────
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await _fetchWithTimeout(API_URL, {
+        method:   "POST",
+        redirect: "follow",
+        // text/plain → browser không gửi OPTIONS preflight
+        // Apps Script doPost đọc e.postData.contents → JSON.parse
+        headers:  { "Content-Type": "text/plain;charset=UTF-8" },
+        body:     JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      // Apps Script đôi khi trả về trang HTML lỗi thay vì JSON khi redirect
+      if (data && (data.ok !== undefined || data.error !== undefined)) return data;
+      throw new Error("Phản hồi không hợp lệ");
+    } catch(e) {
+      lastErr = e;
+      if (e.name === "AbortError") throw new Error("Hết thời gian chờ — kiểm tra URL API");
+      if (i < retries) await new Promise(res => setTimeout(res, 800 * (i + 1)));
+    }
+  }
+
+  // ── Fallback: GET + payload (cho các môi trường chặn POST cross-origin) ──
   const action  = body.action || "";
   const token   = TOKEN || "";
   const payload = JSON.stringify(body);
@@ -612,12 +641,11 @@ async function apiPost(body, retries = 2) {
   if (token) params.token = token;
   const url = API_URL + "?" + new URLSearchParams(params);
 
-  // Cảnh báo nếu URL quá dài (giới hạn ~8000 ký tự)
-  if (url.length > 8000) {
-    throw new Error("Dữ liệu quá lớn để gửi — liên hệ admin");
+  if (url.length > 2048) {
+    // URL quá dài cho GET → báo lỗi rõ ràng thay vì bị truncate thầm lặng
+    throw new Error("Dữ liệu quá lớn cho GET fallback — POST bị chặn bởi mạng/proxy");
   }
 
-  let lastErr;
   for (let i = 0; i <= retries; i++) {
     try {
       const r = await _fetchWithTimeout(url, { redirect: "follow" });
@@ -626,7 +654,7 @@ async function apiPost(body, retries = 2) {
     } catch(e) {
       lastErr = e;
       if (e.name === "AbortError") throw new Error("Hết thời gian chờ — kiểm tra URL API");
-      if (i < retries) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+      if (i < retries) await new Promise(res => setTimeout(res, 800 * (i + 1)));
     }
   }
   throw lastErr;
