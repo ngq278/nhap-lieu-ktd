@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nhập đáp án bài làm sinh viên</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f0efea;
+  --border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.22);
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
+  --green:#3B6D11;--green-bg:#EAF3DE;--green-btn:#639922;
+  --blue:#185FA5;--blue-bg:#E6F1FB;
+  --amber:#854F0B;--amber-bg:#FAEEDA;
+  --red:#A32D2D;--red-bg:#FCEBEB;
+  --purple:#534AB7;--purple-bg:#EEEDFE;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1c;--bg2:#272725;--bg3:#2e2e2b;
+    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+    --text:#e8e6de;--text2:#b4b2a9;--text3:#888780;
+    --green-bg:#173404;--blue-bg:#042C53;--amber-bg:#412402;
+    --red-bg:#501313;--purple-bg:#26215C;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:var(--text);background:var(--bg3);min-height:100vh;padding:16px}
+code{font-family:monospace;font-size:12px;background:var(--bg2);padding:1px 5px;border-radius:3px;border:0.5px solid var(--border)}
+.container{max-width:860px;margin:0 auto}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem}
+.sec-title{font-size:11px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.7rem;display:flex;align-items:center;gap:6px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:11px;color:var(--text2)}
+.field input,.field select{height:32px;border-radius:var(--radius);border:0.5px solid var(--border2);padding:0 9px;background:var(--bg);color:var(--text);font-size:13px;width:100%}
+.field input:focus,.field select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(99,153,34,.15)}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.hint{font-size:11px;color:var(--text3);margin-top:2px}
+.mcq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
+.mcq-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mcq-item .qn{font-size:10px;color:var(--text3);font-weight:500}
+.mcq-item .opts{display:flex;gap:2px}
+.opt-btn{width:24px;height:24px;border-radius:4px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .1s}
+.opt-btn:hover{border-color:var(--green)}
+.opt-btn.sel{background:var(--green-btn);color:#fff;border-color:var(--green)}
+.opt-btn:disabled{opacity:.4;cursor:default}
+/* Câu MCQ đang được focus khi nhập bằng bàn phím */
+.mcq-item.active-q .qn{color:var(--green);font-weight:700}
+.mcq-item.active-q .opts{outline:2px solid var(--green-btn);outline-offset:2px;border-radius:4px}
+.kbd{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:3px;border:0.5px solid var(--border2);background:var(--bg2);font-size:10px;font-weight:600;font-family:monospace;color:var(--text2)}
+.mcq-text-inp{width:38px;height:24px;border-radius:4px;border:0.5px solid var(--border2);text-align:center;font-size:11px;background:var(--bg);color:var(--text);padding:0}
+.tl-block{border:0.5px solid var(--border);border-radius:var(--radius);padding:.7rem .9rem;margin-bottom:.5rem}
+.tl-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem}
+.tl-head span:first-child{font-size:13px;font-weight:500}
+.btn{padding:7px 14px;border-radius:var(--radius);border:0.5px solid var(--border2);background:transparent;color:var(--text);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .12s}
+.btn:hover{background:var(--bg2)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-primary{background:var(--green-btn);border-color:var(--green);color:#fff}
+.btn-primary:hover{background:var(--green)}
+.btn-danger{color:var(--red)}
+.btn-danger:hover{background:var(--red-bg)}
+.btn-admin{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap;margin-top:.75rem}
+.badge{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-purple{background:var(--purple-bg);color:var(--purple)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.cfg-num{display:flex;align-items:center;gap:5px}
+.cfg-num button{width:26px;height:26px;border-radius:5px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
+.cfg-num button:hover{border-color:var(--green)}
+.cfg-num input{width:46px;height:26px;text-align:center;font-size:13px;border-radius:5px;border:0.5px solid var(--border2);background:var(--bg);color:var(--text)}
+.stats-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:.75rem}
+.stat-pill{background:var(--bg2);border-radius:var(--radius);padding:4px 11px;font-size:11px;color:var(--text2);border:0.5px solid var(--border)}
+.stat-pill strong{color:var(--text);font-weight:500}
+.list-wrap{max-height:200px;overflow-y:auto;border:0.5px solid var(--border);border-radius:var(--radius)}
+.entry-row{display:grid;grid-template-columns:68px 90px 1fr 58px 54px 44px 32px;align-items:center;padding:6px 10px;border-bottom:0.5px solid var(--border);font-size:11px;gap:6px;cursor:pointer}
+.entry-row:last-child{border-bottom:none}
+.entry-row:hover{background:var(--bg2)}
+.tab{padding:4px 11px;border-radius:var(--radius);border:0.5px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--text2)}
+.tab.active{background:var(--green-btn);color:#fff;border-color:var(--green)}
+.toast{position:fixed;bottom:20px;right:20px;background:#2C2C2A;color:#fff;padding:8px 16px;border-radius:var(--radius);font-size:12px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.api-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);display:inline-block}
+.api-dot.ok{background:var(--green-btn)}
+.api-dot.err{background:var(--red)}
+.nav-tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1rem}
+.nav-tab{padding:8px 16px;font-size:13px;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none}
+.nav-tab.active{color:var(--text);border-bottom-color:var(--green-btn);font-weight:500}
+
+/* Role banner */
+.role-banner{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:var(--radius);margin-bottom:1rem;font-size:12px;border:0.5px solid}
+.role-banner.admin{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+.role-banner.staff{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.role-banner.readonly{background:var(--bg2);border-color:var(--border2);color:var(--text2)}
+
+/* Login modal (faux viewport) */
+.modal-bg{min-height:320px;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;border-radius:var(--radius-lg);margin-bottom:1rem}
+.modal-box{background:var(--bg);border-radius:var(--radius-lg);padding:1.5rem 2rem;width:360px;border:0.5px solid var(--border)}
+.modal-box h2{font-size:15px;font-weight:500;margin-bottom:1rem}
+
+/* Admin-only lock overlay */
+.locked{opacity:.45;pointer-events:none;user-select:none;position:relative}
+.locked::after{content:"🔒";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;pointer-events:none}
+
+@media(max-width:560px){
+  .row2,.row3{grid-template-columns:1fr}
+  .entry-row{grid-template-columns:60px 80px 1fr 50px 32px}
+  .entry-row .hide-sm{display:none}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+  <div>
+    <div style="font-size:17px;font-weight:600" id="app-title">Nhập đáp án bài làm SV</div>
+    <div style="font-size:12px;color:var(--text2)" id="app-sub">Chưa cấu hình</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="api-dot" id="api-dot"></span>
+    <span style="font-size:11px;color:var(--text3)" id="api-status">Chưa kết nối</span>
+    <button class="btn btn-sm" onclick="syncNow()" title="Đồng bộ">&#8635;</button>
+    <button class="btn btn-sm" id="btn-logout" style="display:none" onclick="logout()">Đăng xuất</button>
+  </div>
+</div>
+
+<!-- ══ ROLE BANNER ═════════════════════════════════════════════════ -->
+<div class="role-banner readonly" id="role-banner">
+  &#128274; Chưa đăng nhập — chỉ có thể xem
+</div>
+
+<!-- ══ LOGIN PANEL ═════════════════════════════════════════════════ -->
+<div id="login-panel">
+  <div class="modal-bg">
+    <div class="modal-box">
+      <h2>&#128274; Đăng nhập để nhập liệu</h2>
+      <div class="field" style="margin-bottom:10px">
+        <label>URL Apps Script Web App</label>
+        <input id="login-url" placeholder="https://script.google.com/macros/s/.../exec" />
+      </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Token truy cập</label>
+        <input id="login-token" type="password" placeholder="Nhập token được cấp" />
+        <div class="hint">Admin token: toàn quyền &nbsp;|&nbsp; Staff token: chỉ nhập liệu</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="doLogin()">&#10003; Đăng nhập</button>
+        <button class="btn" onclick="viewOnly()">Chỉ xem</button>
+      </div>
+      <div id="login-err" style="font-size:12px;color:var(--red);margin-top:8px;display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ════════════════════════════════════════════════════ -->
+<div id="main-app" style="display:none">
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showTab('form')" id="navtab-form">Nhập liệu</button>
+  <button class="nav-tab" onclick="showTab('list')" id="navtab-list">Danh sách (<span id="nav-count">0</span>)</button>
+  <button class="nav-tab" onclick="showTab('lookup')" id="navtab-lookup">Tra cứu điểm</button>
+  <button class="nav-tab" onclick="showTab('cfg')" id="navtab-cfg" id="navtab-cfg">&#9881; Cấu hình</button>
+</div>
+
+<!-- ── TAB CẤU HÌNH ──────────────────────────────────────────────── -->
+<div id="tab-cfg" style="display:none">
+  <div id="cfg-lock-notice" class="card" style="display:none;background:var(--amber-bg);border-color:var(--amber)">
+    <div style="font-size:13px;color:var(--amber)">&#128274; Chỉ admin mới có thể thay đổi cấu hình. Bạn đang ở chế độ Staff (chỉ nhập liệu).</div>
+  </div>
+  <div id="cfg-form">
+    <div class="card">
+      <div class="sec-title">&#127381; Thông tin kỳ thi</div>
+      <div class="row3" style="margin-bottom:10px">
+        <div class="field"><label>Tên môn học</label><input id="cfg-mon" value="Kỹ thuật điện" /></div>
+        <div class="field"><label>Mã nhóm</label><input id="cfg-group" value="KTD2025HK1" oninput="this.value=this.value.toUpperCase()" /></div>
+        <div class="field"><label>Kỳ thi</label><input id="cfg-ky" value="HK1-2024-2025" /></div>
+      </div>
+      <div class="row3">
+        <div class="field">
+          <label>Số câu MCQ</label>
+          <div class="cfg-num">
+            <button onclick="adj('cfg-nmcq',-1)">−</button>
+            <input type="number" id="cfg-nmcq" value="14" min="1" max="80" />
+            <button onclick="adj('cfg-nmcq',1)">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Số phương án</label>
+          <div style="display:flex;gap:5px;margin-top:4px">
+            <button class="tab active" id="opts4" onclick="setOptsN(4)">4 (A–D)</button>
+            <button class="tab" id="opts5" onclick="setOptsN(5)">5 (A–E)</button>
+          </div>
+        </div>
+        <div class="field"><label>Điểm MCQ (tổng)</label><input type="number" id="cfg-diem-mcq" value="4.0" min="0" max="10" step="0.5" /></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">&#9998; Câu tự luận</div>
+      <div id="tl-cfg-list"></div>
+      <button class="btn btn-sm" onclick="addTLCfg()" style="margin-top:6px">+ Thêm câu</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-primary" id="btn-save-cfg" onclick="applyCfg()">&#10003; Lưu cấu hình</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TAB NHẬP LIỆU ─────────────────────────────────────────────── -->
+<div id="tab-form">
+  <div class="stats-bar" id="stats-bar"></div>
+  <div class="card">
+    <div class="sec-title">&#128196; Thông tin sinh viên</div>
+    <div class="row2" style="margin-bottom:8px">
+      <div class="field"><label>Mã đề</label><input id="ma-de" placeholder="VD: 001, A01" maxlength="10" oninput="this.value=this.value.toUpperCase()" /></div>
+      <div class="field"><label>MSSV</label><input id="mssv" placeholder="VD: 2311234" oninput="this.value=this.value.toUpperCase()" /></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Họ và tên</label><input id="hoten" placeholder="Nguyễn Văn A" /></div>
+      <div class="field"><label>Lớp</label><input id="lop" placeholder="VD: 23TDT1" /></div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+      <div class="sec-title" style="margin-bottom:0">&#9745; Phần A — Trắc nghiệm</div>
+      <div style="display:flex;gap:4px">
+        <button class="tab active" id="tab-btn" onclick="setInputMode('btn')">Nút</button>
+        <button class="tab" id="tab-txt" onclick="setInputMode('txt')">Gõ</button>
+        <button class="tab" id="tab-kbd" onclick="setInputMode('kbd')">&#9109; Bàn phím</button>
+      </div>
+    </div>
+    <div id="mcq-btn-area"></div>
+    <div id="mcq-txt-area" style="display:none"></div>
+    <!-- Hướng dẫn chế độ bàn phím -->
+    <div id="mcq-kbd-hint" style="display:none;margin-top:.5rem;padding:.6rem .75rem;background:var(--green-bg);border-radius:var(--radius);border:0.5px solid var(--green)">
+      <div style="font-size:11px;font-weight:500;color:var(--green);margin-bottom:.4rem">&#9109; Cách nhập nhanh bằng bàn phím</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:var(--text2)">
+        <span><kbd class="kbd">A</kbd> = Đáp án A</span>
+        <span><kbd class="kbd">S</kbd> = Đáp án B</span>
+        <span><kbd class="kbd">D</kbd> = Đáp án C</span>
+        <span><kbd class="kbd">F</kbd> = Đáp án D</span>
+        <span><kbd class="kbd">Enter</kbd> = Câu tiếp theo</span>
+        <span><kbd class="kbd">Backspace</kbd> = Xoá đáp án câu này</span>
+        <span><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd> = Câu trước / sau</span>
+        <span style="color:var(--text3)">Nhấn lại phím → bỏ chọn đáp án đó</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:.4rem">
+        Click vào số câu bất kỳ để nhảy tới câu đó.
+      </div>
+    </div>
+  </div>
+  <div class="card" id="tl-card" style="display:none">
+    <div class="sec-title">&#9998; Phần B — Tự luận (đáp số)</div>
+    <div class="hint" style="margin-bottom:.6rem">Nhập số liệu SV ghi ở ô đáp số. Bỏ trống = SV không ghi.</div>
+    <div id="tl-form-area"></div>
+  </div>
+  <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:.75rem">
+    <div class="field" style="max-width:220px">
+      <label>Người nhập</label>
+      <input id="nguoi-nhap" placeholder="Tên hoặc mã" />
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+      <span id="rec-ctr">Bài mới</span>
+      <button class="btn btn-sm" onclick="navEntry(-1)">&#8592;</button>
+      <button class="btn btn-sm" onclick="navEntry(1)">&#8594;</button>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-danger btn-sm" id="btn-clear" onclick="clearForm()">&#128465; Xoá form</button>
+    <button class="btn btn-sm" id="btn-save" onclick="saveEntry()">&#128190; Lưu (Ctrl+Enter)</button>
+    <button class="btn btn-primary" id="btn-export" onclick="exportCSV()">&#8681; Xuất CSV (<span id="exp-cnt">0</span>)</button>
+  </div>
+</div>
+
+<!-- ── TAB DANH SÁCH ──────────────────────────────────────────────── -->
+<div id="tab-list" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+    <div style="font-size:13px;font-weight:500">Tổng: <strong id="list-total">0</strong> bài &nbsp;|&nbsp; Nhóm: <span id="list-group">—</span></div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="syncNow()">&#8635; Đồng bộ</button>
+      <button class="btn btn-sm btn-danger" id="btn-clear-all" onclick="clearAllEntries()">&#128465; Xoá tất cả</button>
+    </div>
+  </div>
+  <div class="card" style="padding:.5rem .75rem;margin-bottom:.5rem">
+    <div id="stats-by-user" style="font-size:12px;color:var(--text2)">—</div>
+  </div>
+  <div class="list-wrap" id="entry-list-wrap">
+    <div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Chưa có bài nào</div>
+  </div>
+<!-- ── TAB TRA CỨU ĐIỂM ───────────────────────────────────────────── -->
+<div id="tab-lookup" style="display:none">
+
+  <!-- Khu vực SV tra cứu -->
+  <div class="card">
+    <div class="sec-title">&#128269; Tra cứu kết quả thi</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="flex:1;min-width:180px">
+        <label>Mã số sinh viên (MSSV)</label>
+        <input id="lk-mssv" placeholder="VD: 2311234" maxlength="20"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter')lookupScore()" />
+      </div>
+      <div class="field" style="min-width:160px">
+        <label>Kỳ thi <span style="color:var(--text3)">(bỏ trống = tất cả)</span></label>
+        <select id="lk-ky"><option value="">— Tất cả kỳ thi —</option></select>
+      </div>
+      <button class="btn btn-primary" onclick="lookupScore()" style="height:32px;margin-bottom:3px">
+        &#128269; Tìm kiếm
+      </button>
+    </div>
+    <div class="hint" style="margin-top:6px">Nhập MSSV rồi nhấn Enter hoặc bấm Tìm kiếm.</div>
+  </div>
+
+  <!-- Kết quả tra cứu -->
+  <div id="lk-result" style="display:none">
+    <div id="lk-cards"></div>
+  </div>
+  <div id="lk-empty" style="display:none">
+    <div class="card" style="text-align:center;padding:2rem 1rem;color:var(--text2)">
+      <div style="font-size:28px;margin-bottom:.5rem">&#128269;</div>
+      <div id="lk-empty-msg" style="font-size:13px"></div>
+    </div>
+  </div>
+
+  <!-- Quản lý kết quả (admin only) -->
+  <div id="lk-admin-panel" style="display:none;margin-top:1rem">
+    <div style="height:0.5px;background:var(--border);margin:1rem 0"></div>
+    <div class="sec-title">&#128081; Quản lý dữ liệu kết quả <span class="badge badge-purple">Admin</span></div>
+
+    <div class="card">
+      <div style="font-size:12px;font-weight:500;margin-bottom:.6rem">Upload kết quả từ Excel/CSV</div>
+      <div class="hint" style="margin-bottom:.75rem">
+        Chọn file <code>bang_diem_*.xlsx</code> hoặc <code>ket_qua_*.xlsx</code> từ <code>grade_exam.py</code> / <code>cham_diem_offline.py</code>.<br>
+        File cần có cột: <code>mssv, ho_ten, lop, diem_mcq, diem_tl, tong_diem</code> (tên không phân biệt hoa/thường).
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px">
+        <div class="field" style="flex:1;min-width:180px">
+          <label>Tên kỳ thi</label>
+          <input id="up-ky" placeholder="VD: HK1-2024-2025" />
+        </div>
+        <div class="field" style="flex:1;min-width:200px">
+          <label>File Excel/CSV kết quả</label>
+          <input type="file" id="up-file" accept=".xlsx,.csv"
+            style="height:auto;padding:4px 6px;font-size:12px" />
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <input type="checkbox" id="up-replace" style="width:auto;height:auto" />
+          <label for="up-replace" style="font-size:12px;color:var(--text2);white-space:nowrap">Ghi đè kỳ cũ</label>
+        </div>
+        <button class="btn btn-primary" onclick="uploadResults()" style="height:32px;margin-bottom:3px">
+          &#8679; Upload
+        </button>
+      </div>
+      <div id="up-progress" style="display:none;font-size:12px;color:var(--text2)"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+        <div style="font-size:12px;font-weight:500">Kỳ thi đang có dữ liệu</div>
+        <button class="btn btn-sm" onclick="clearScoreCache()" title="Buộc SV nhận dữ liệu mới ngay, không chờ cache hết hạn">
+          &#9851; Xoá cache
+        </button>
+      </div>
+      <div id="ky-list-wrap" style="font-size:12px;color:var(--text3)">Đang tải...</div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /main-app -->
+</div><!-- /container -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════════
+let API_URL   = "";
+let TOKEN     = "";
+let ROLE      = "readonly";
+
+// ══════════════════════════════════════════════════════════════════
+//  ĐỔI DÒNG NÀY SAU KHI DEPLOY APPS SCRIPT (chỉ cần làm 1 lần)
+const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfycbzzTyrpYMmLjZkNSLch6XrCYRzf_ZgXgQKwblP_sg7RHZBsSwbVaO61wQNIzJmSxvEvQg/exec";
+//  Ví dụ:
+//  const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfy.../exec";
+// ══════════════════════════════════════════════════════════════════   // "admin" | "staff" | "readonly"
+let CFG       = null;
+let entries   = [];
+let curIdx    = -1;
+let iMode     = "btn";
+let optsN     = 4;
+let mcqSt     = {};
+let curQ      = 1;   // câu MCQ đang active (chế độ bàn phím)
+const OPTS    = ["A","B","C","D","E"];
+const YI      = "abcdefgh";
+
+// ════════════════════════════════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ════════════════════════════════════════════════════════════════════
+async function doLogin() {
+  const url   = (document.getElementById("login-url").value.trim()
+                 || HARDCODED_API_URL
+                 || new URLSearchParams(location.search).get("api") || "");
+  const token = document.getElementById("login-token").value.trim();
+  const errEl = document.getElementById("login-err");
+  errEl.style.display = "none";
+  if (!url) { showLoginErr("Không tìm thấy URL API — liên hệ admin!"); return; }
+
+  setApiStatus("","Đang kiểm tra...");
+  try {
+    const r = await fetch(`${url}?action=ping&token=${encodeURIComponent(token)}`);
+    const d = await r.json();
+    if (!d.ok && d.role === undefined) { showLoginErr("API phản hồi không hợp lệ"); return; }
+    const role = d.role || "readonly";
+    if (role === "denied") { showLoginErr("Token không hợp lệ!"); return; }
+
+    // Lưu session
+    API_URL = url; TOKEN = token; ROLE = role;
+    sessionStorage.setItem("api_url", url);
+    sessionStorage.setItem("token",   token);
+    sessionStorage.setItem("role",    role);
+
+    await afterLogin();
+  } catch(e) { showLoginErr("Lỗi kết nối: " + e); setApiStatus("err","Lỗi"); }
+}
+
+function viewOnly() {
+  const url = (document.getElementById("login-url").value.trim()
+               || HARDCODED_API_URL
+               || new URLSearchParams(location.search).get("api") || "");
+  if (!url) { showLoginErr("Không tìm thấy URL API — liên hệ admin!"); return; }
+  API_URL = url; TOKEN = ""; ROLE = "readonly";
+  sessionStorage.setItem("api_url", url);
+  sessionStorage.setItem("token", "");
+  sessionStorage.setItem("role", "readonly");
+  afterLogin();
+}
+
+async function afterLogin() {
+  document.getElementById("login-panel").style.display = "none";
+  document.getElementById("main-app").style.display    = "";
+  document.getElementById("btn-logout").style.display  = "";
+  applyRoleUI();
+  setApiStatus("ok", ROLE === "admin" ? "Admin" : ROLE === "staff" ? "Staff" : "Chỉ xem");
+  // Tải cấu hình từ server
+  try {
+    const r = await apiGet({ action: "getConfig" });
+    if (r.ok && r.config) { CFG = r.config; populateCfgUI(CFG); applyConfig(); }
+  } catch(e) {}
+  await syncNow();
+}
+
+function logout() {
+  sessionStorage.clear();
+  API_URL = ""; TOKEN = ""; ROLE = "readonly"; CFG = null; entries = [];
+  document.getElementById("login-panel").style.display = "";
+  document.getElementById("main-app").style.display    = "none";
+  document.getElementById("btn-logout").style.display  = "none";
+  setApiStatus("","Chưa kết nối");
+  updateRoleBanner();
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById("login-err");
+  el.textContent = msg; el.style.display = "";
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ROLE UI
+// ════════════════════════════════════════════════════════════════════
+function applyRoleUI() {
+  updateRoleBanner();
+  const isAdmin  = ROLE === "admin";
+  const canWrite = ROLE === "admin" || ROLE === "staff";
+
+  // Cấu hình: chỉ admin
+  const cfgForm  = document.getElementById("cfg-form");
+  const lockNote = document.getElementById("cfg-lock-notice");
+  if (!isAdmin) {
+    cfgForm.classList.add("locked");
+    lockNote.style.display = "";
+    document.getElementById("btn-save-cfg").disabled = true;
+  } else {
+    cfgForm.classList.remove("locked");
+    lockNote.style.display = "none";
+    document.getElementById("btn-save-cfg").disabled = false;
+  }
+
+  // Xoá tất cả: chỉ admin
+  const btnClearAll = document.getElementById("btn-clear-all");
+  btnClearAll.disabled = !isAdmin;
+  if (!isAdmin) btnClearAll.title = "Chỉ admin mới có thể xoá";
+
+  // Xuất CSV: chỉ admin
+  const btnExport = document.getElementById("btn-export");
+  btnExport.disabled = !isAdmin;
+  if (!isAdmin) { btnExport.title = "Chỉ admin mới có thể xuất CSV"; btnExport.classList.remove("btn-primary"); }
+
+  // Lưu / xoá form: cần staff hoặc admin
+  document.getElementById("btn-save").disabled  = !canWrite;
+  document.getElementById("btn-clear").disabled = !canWrite;
+
+  // Disable input nếu chỉ xem
+  if (!canWrite) {
+    document.querySelectorAll("#tab-form input, #tab-form .opt-btn").forEach(el => {
+      el.disabled = true;
+    });
+  }
+
+  // Tab cấu hình: chỉ admin thấy
+  document.getElementById("navtab-cfg").style.display = isAdmin ? "" : "none";
+  // Panel quản lý kết quả trong tab lookup: chỉ admin
+  const adminPanel = document.getElementById("lk-admin-panel");
+  if (adminPanel) adminPanel.style.display = isAdmin ? "" : "none";
+}
+
+function updateRoleBanner() {
+  const el = document.getElementById("role-banner");
+  if (ROLE === "admin") {
+    el.className = "role-banner admin";
+    el.innerHTML = "&#128081; Admin — toàn quyền: cấu hình, nhập liệu, xoá dữ liệu";
+  } else if (ROLE === "staff") {
+    el.className = "role-banner staff";
+    el.innerHTML = "&#9997; Staff — có thể nhập liệu, không thể thay đổi cấu hình hoặc xoá";
+  } else {
+    el.className = "role-banner readonly";
+    el.innerHTML = "&#128274; Chỉ xem — không thể nhập hoặc thay đổi dữ liệu";
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════════════════
+function showTab(name) {
+  ["form","list","cfg","lookup"].forEach(t => {
+    document.getElementById("tab-"+t).style.display = t===name?"":"none";
+    document.getElementById("navtab-"+t).classList.toggle("active",t===name);
+  });
+  if (name === "lookup") onShowLookup();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════════════════════════
+// ── API helpers ───────────────────────────────────────────────────────
+// Apps Script redirect GET qua accounts.google.com lần đầu.
+// Cần follow=manual để bắt redirect, sau đó dùng URL mới.
+// POST: dùng Content-Type text/plain để tránh CORS preflight (OPTIONS).
+
+const _FETCH_TIMEOUT = 15000; // 15s
+
+function _fetchWithTimeout(url, opts) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), _FETCH_TIMEOUT);
+  return fetch(url, { ...opts, signal: controller.signal })
+    .finally(() => clearTimeout(tid));
+}
+
+async function apiGet(params, retries = 2) {
+  if (TOKEN) params.token = TOKEN;
+  const url = API_URL + "?" + new URLSearchParams(params);
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await _fetchWithTimeout(url);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch(e) {
+      if (i === retries) throw e;
+      await new Promise(res => setTimeout(res, 800 * (i + 1)));
+    }
+  }
+}
+
+async function apiPost(body, retries = 2) {
+  if (TOKEN) body.token = TOKEN;
+  // Content-Type: text/plain → browser gửi "simple request"
+  // → không có CORS preflight (OPTIONS) → Apps Script nhận được ngay.
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await _fetchWithTimeout(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch(e) {
+      if (e.name === "AbortError") throw new Error("Hết thời gian chờ (>15s) — kiểm tra lại URL API");
+      if (i === retries) throw e;
+      await new Promise(res => setTimeout(res, 800 * (i + 1)));
+    }
+  }
+}
+
+function setApiStatus(state, msg) {
+  document.getElementById("api-dot").className = "api-dot " + (state==="ok"?"ok":state==="err"?"err":"");
+  document.getElementById("api-status").textContent = msg;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════════════════════════
+function adj(id,d){const el=document.getElementById(id);let v=parseInt(el.value)||0;v=Math.max(parseInt(el.min||1),Math.min(parseInt(el.max||99),v+d));el.value=v;}
+function setOptsN(n){optsN=n;document.getElementById("opts4").classList.toggle("active",n===4);document.getElementById("opts5").classList.toggle("active",n===5);}
+
+let tlCfgIdx = 0;
+function addTLCfg(preset) {
+  tlCfgIdx++;
+  const id   = "tl"+tlCfgIdx;
+  const cau  = preset?preset.cau:(14+tlCfgIdx);
+  const yi   = preset?preset.yi:4;
+  const diem = preset?preset.diem:3.0;
+  const div  = document.createElement("div");
+  div.id = id;
+  div.style.cssText = "display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:6px;padding:8px 10px;border:0.5px solid var(--border);border-radius:6px";
+  div.innerHTML = `
+    <div class="field"><label>Số câu</label><input type="number" id="${id}-cau" value="${cau}" min="1"/></div>
+    <div class="field"><label>Số ý</label>
+      <div class="cfg-num">
+        <button onclick="adj('${id}-yi',-1)">−</button>
+        <input type="number" id="${id}-yi" value="${yi}" min="1" max="8"/>
+        <button onclick="adj('${id}-yi',1)">+</button>
+      </div></div>
+    <div class="field"><label>Điểm</label><input type="number" id="${id}-diem" value="${diem}" min="0" max="10" step="0.5"/></div>
+    <button class="btn btn-sm btn-danger" onclick="document.getElementById('${id}').remove()">✕</button>`;
+  document.getElementById("tl-cfg-list").appendChild(div);
+}
+
+function getTLCfgList() {
+  const res = [];
+  document.querySelectorAll("[id^='tl'][id$='-cau']").forEach(el => {
+    const base = el.id.replace("-cau","");
+    const cau  = parseInt(el.value)||0;
+    const yi   = parseInt((document.getElementById(base+"-yi")||{}).value)||1;
+    const diem = parseFloat((document.getElementById(base+"-diem")||{}).value)||0;
+    if (cau>0) res.push({cau,yi,diem});
+  });
+  return res;
+}
+
+function populateCfgUI(cfg) {
+  document.getElementById("cfg-mon").value      = cfg.mon   ||"";
+  document.getElementById("cfg-group").value    = cfg.group ||"";
+  document.getElementById("cfg-ky").value       = cfg.ky    ||"";
+  document.getElementById("cfg-nmcq").value     = cfg.nMCQ  ||14;
+  document.getElementById("cfg-diem-mcq").value = cfg.diemMCQ||4;
+  setOptsN(cfg.optsN||4);
+  document.getElementById("tl-cfg-list").innerHTML="";
+  tlCfgIdx=0;
+  (cfg.tlList||[]).forEach(t=>addTLCfg(t));
+}
+
+async function applyCfg() {
+  if (ROLE!=="admin"){toast("Chỉ admin mới có thể lưu cấu hình!");return;}
+  CFG = {
+    mon:     document.getElementById("cfg-mon").value.trim()||"Kỳ thi",
+    group:   document.getElementById("cfg-group").value.trim().toUpperCase()||"DEFAULT",
+    ky:      document.getElementById("cfg-ky").value.trim(),
+    nMCQ:    parseInt(document.getElementById("cfg-nmcq").value)||14,
+    diemMCQ: parseFloat(document.getElementById("cfg-diem-mcq").value)||4,
+    optsN, tlList: getTLCfgList(),
+  };
+  try {
+    const r = await apiPost({action:"saveConfig",config:CFG});
+    if (!r.ok) { toast("Lỗi lưu: "+(r.error||"?")); return; }
+  } catch(e) { toast("Lỗi mạng"); return; }
+  applyConfig();
+  showTab("form");
+  toast("Đã lưu cấu hình!");
+}
+
+function applyConfig() {
+  if (!CFG) return;
+  optsN = CFG.optsN||4;
+  initMCQ(); buildMCQUI(); buildTLUI(); updateHeader();
+  document.getElementById("app-title").textContent = CFG.mon||"Nhập đáp án";
+  document.getElementById("app-sub").textContent   = `${CFG.nMCQ} MCQ + ${(CFG.tlList||[]).length} câu TL · Nhóm ${CFG.group}`;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MCQ
+// ════════════════════════════════════════════════════════════════════
+function initMCQ(){
+  mcqSt={};
+  curQ=1;
+  for(let i=1;i<=(CFG?CFG.nMCQ:14);i++)mcqSt[i]=[];
+}
+
+// ── Highlight câu đang active (chế độ bàn phím) ──────────────────
+function setActiveQ(q){
+  if(!CFG) return;
+  q = Math.max(1, Math.min(CFG.nMCQ, q));
+  curQ = q;
+  document.querySelectorAll(".mcq-item").forEach(el => el.classList.remove("active-q"));
+  const el = document.getElementById("mcq-item-"+q);
+  if(el){
+    el.classList.add("active-q");
+    el.scrollIntoView({ block:"nearest", behavior:"smooth" });
+  }
+}
+function clearActiveQ(){
+  document.querySelectorAll(".mcq-item").forEach(el => el.classList.remove("active-q"));
+}
+
+function buildMCQUI() {
+  if (!CFG) return;
+  const opts     = OPTS.slice(0,CFG.optsN);
+  const canWrite = ROLE==="admin"||ROLE==="staff";
+  const btnArea  = document.getElementById("mcq-btn-area");
+  const txtArea  = document.getElementById("mcq-txt-area");
+  btnArea.innerHTML=""; txtArea.innerHTML="";
+  const grid=document.createElement("div"); grid.className="mcq-grid";
+  for(let i=1;i<=CFG.nMCQ;i++){
+    const item=document.createElement("div");
+    item.className="mcq-item";
+    item.id="mcq-item-"+i;
+    // Click vào số câu → set active (chế độ bàn phím)
+    item.innerHTML=`<span class="qn" style="cursor:pointer" onclick="if(iMode==='kbd')setActiveQ(${i})">${i}</span><div class="opts" id="bo-${i}">${
+      opts.map(c=>`<button class="opt-btn"${canWrite?"":" disabled"} onclick="toggleOpt(${i},'${c}')">${c}</button>`).join("")
+    }</div>`;
+    grid.appendChild(item);
+  }
+  btnArea.appendChild(grid);
+  const row=document.createElement("div"); row.style.cssText="display:flex;gap:5px;flex-wrap:wrap";
+  for(let i=1;i<=CFG.nMCQ;i++){
+    const w=document.createElement("div"); w.style.cssText="display:flex;flex-direction:column;align-items:center;gap:2px";
+    w.innerHTML=`<span style="font-size:10px;color:var(--text3)">${i}</span>
+      <input class="mcq-text-inp" id="ti-${i}" maxlength="${CFG.optsN}" placeholder="—"
+        ${canWrite?"":"disabled"} oninput="syncTxt(${i},this.value)">`;
+    row.appendChild(w);
+  }
+  const note=document.createElement("div"); note.className="hint"; note.style.marginTop="6px";
+  note.textContent=`Gõ chữ hoa (${opts.join("/")}). Nhiều đáp án: AB. Bỏ trống = không chọn.`;
+  txtArea.appendChild(row); txtArea.appendChild(note);
+}
+
+function toggleOpt(q,c){
+  if(ROLE==="readonly") return;
+  if(!mcqSt[q])mcqSt[q]=[];
+  const i=mcqSt[q].indexOf(c);
+  if(i>-1)mcqSt[q].splice(i,1); else mcqSt[q].push(c);
+  mcqSt[q].sort(); refreshBtnUI(q); syncBtnToTxt(q); updateStatsBar();
+}
+function refreshBtnUI(q){const w=document.getElementById("bo-"+q);if(!w)return;w.querySelectorAll(".opt-btn").forEach(b=>b.classList.toggle("sel",mcqSt[q].includes(b.textContent)));}
+function syncBtnToTxt(q){const el=document.getElementById("ti-"+q);if(el)el.value=mcqSt[q].join("");}
+function syncTxt(q,val){
+  const opts=OPTS.slice(0,CFG?CFG.optsN:4);
+  const c=val.toUpperCase().replace(new RegExp(`[^${opts.join("")}]`,"g"),"").split("").filter((x,i,a)=>a.indexOf(x)===i);
+  c.sort();mcqSt[q]=c;refreshBtnUI(q);updateStatsBar();
+}
+function setInputMode(m){
+  iMode=m;
+  document.getElementById("tab-btn").classList.toggle("active",m==="btn");
+  document.getElementById("tab-txt").classList.toggle("active",m==="txt");
+  document.getElementById("tab-kbd").classList.toggle("active",m==="kbd");
+  document.getElementById("mcq-btn-area").style.display  = m==="btn"||m==="kbd" ? "" : "none";
+  document.getElementById("mcq-txt-area").style.display  = m==="txt" ? "" : "none";
+  document.getElementById("mcq-kbd-hint").style.display  = m==="kbd" ? "" : "none";
+  if(m==="kbd") setActiveQ(curQ);
+  else clearActiveQ();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  TL UI
+// ════════════════════════════════════════════════════════════════════
+function buildTLUI() {
+  const area=document.getElementById("tl-form-area"); area.innerHTML="";
+  if(!CFG||!CFG.tlList||!CFG.tlList.length){document.getElementById("tl-card").style.display="none";return;}
+  document.getElementById("tl-card").style.display="";
+  const canWrite=ROLE==="admin"||ROLE==="staff";
+  CFG.tlList.forEach(({cau,yi,diem})=>{
+    const blk=document.createElement("div"); blk.className="tl-block";
+    const cols=Math.min(yi,4);
+    blk.innerHTML=`<div class="tl-head"><span>Câu ${cau}</span><span class="badge badge-amber">${yi} ý · ${diem}đ</span></div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8px">${
+        Array.from({length:yi},(_,k)=>`<div class="field"><label>Ý (${YI[k]})</label>
+          <input id="tli-${cau}-${YI[k]}" placeholder="Đáp số..." ${canWrite?"":"disabled"}/></div>`).join("")
+      }</div>`;
+    area.appendChild(blk);
+  });
+}
+function updateHeader(){if(!CFG)return;}
+
+// ════════════════════════════════════════════════════════════════════
+//  FORM DATA
+// ════════════════════════════════════════════════════════════════════
+function getFormData(){
+  if(!CFG)return null;
+  const tl={};
+  (CFG.tlList||[]).forEach(({cau,yi})=>{tl[cau]={};for(let k=0;k<yi;k++){const el=document.getElementById(`tli-${cau}-${YI[k]}`);tl[cau][YI[k]]=el?el.value.trim():"";} });
+  const mcq={};for(let i=1;i<=CFG.nMCQ;i++)mcq[i]=[...(mcqSt[i]||[])];
+  return{group:CFG.group,maDe:document.getElementById("ma-de").value.trim().toUpperCase(),mssv:document.getElementById("mssv").value.trim().toUpperCase(),hoTen:document.getElementById("hoten").value.trim(),lop:document.getElementById("lop").value.trim(),nguoiNhap:document.getElementById("nguoi-nhap").value.trim(),timestamp:new Date().toISOString(),mcq,tl};
+}
+function loadFormData(d){
+  document.getElementById("ma-de").value=d.maDe||"";document.getElementById("mssv").value=d.mssv||"";document.getElementById("hoten").value=d.hoTen||"";document.getElementById("lop").value=d.lop||"";
+  for(let i=1;i<=(CFG?CFG.nMCQ:14);i++){mcqSt[i]=[...(d.mcq[i]||[])];refreshBtnUI(i);syncBtnToTxt(i);}
+  (CFG&&CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++){const el=document.getElementById(`tli-${cau}-${YI[k]}`);if(el)el.value=(d.tl&&d.tl[cau]&&d.tl[cau][YI[k]])||"";}});
+  updateStatsBar();
+}
+function clearForm(){
+  document.getElementById("ma-de").value="";document.getElementById("mssv").value="";document.getElementById("hoten").value="";document.getElementById("lop").value="";
+  if(CFG){for(let i=1;i<=CFG.nMCQ;i++){mcqSt[i]=[];refreshBtnUI(i);syncBtnToTxt(i);}(CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++){const el=document.getElementById(`tli-${cau}-${YI[k]}`);if(el)el.value="";}});}
+  curIdx=-1;updateRecCtr();updateStatsBar();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  SAVE / SYNC
+// ════════════════════════════════════════════════════════════════════
+async function saveEntry(){
+  if(ROLE==="readonly"){toast("Bạn chỉ có quyền xem!");return;}
+  const d=getFormData();
+  if(!d){toast("Áp dụng cấu hình trước!");return;}
+  if(!d.mssv){toast("Cần nhập MSSV!");return;}
+  if(!d.maDe){toast("Cần nhập mã đề!");return;}
+  setApiStatus("","Đang lưu...");
+  try{
+    const r=await apiPost({action:"saveEntry",entry:d});
+    if(r.ok){
+      const idx=entries.findIndex(e=>e.mssv===d.mssv&&e.maDe===d.maDe);
+      if(idx>=0)entries[idx]=d; else entries.push(d);
+      renderList();updateStatsBar();updateNavCount();
+      clearForm();setApiStatus("ok","Đã lưu");
+      toast(`Đã lưu: ${d.mssv} · ${d.maDe}`);
+      document.getElementById("ma-de").focus();
+    }else{setApiStatus("err","Lỗi");toast("Lỗi: "+(r.error||"?"));}
+  }catch(e){setApiStatus("err","Lỗi");toast("Lỗi mạng: "+e);}
+}
+
+async function syncNow(){
+  if(!API_URL||!CFG)return;
+  setApiStatus("","Đồng bộ...");
+  try{
+    const r=await apiGet({action:"listEntries",group:CFG.group});
+    if(r.ok){
+      entries=r.entries||[];renderList();updateStatsBar();updateNavCount();
+      const t=new Date().toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"});
+      setApiStatus("ok",`${entries.length} bài · ${t}`);
+      const byUser={};entries.forEach(e=>{byUser[e.nguoiNhap||"?"]=(byUser[e.nguoiNhap||"?"]||0)+1;});
+      document.getElementById("stats-by-user").textContent=
+        "Đã nhập: "+Object.entries(byUser).map(([k,v])=>`${k}: ${v}`).join("  ·  ");
+    }else setApiStatus("err","Lỗi sync");
+  }catch(e){setApiStatus("err","Lỗi mạng");}
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  NAV / LIST
+// ════════════════════════════════════════════════════════════════════
+function navEntry(dir){if(!entries.length)return;if(curIdx===-1)curIdx=dir>0?0:entries.length-1;else curIdx=(curIdx+dir+entries.length)%entries.length;loadFormData(entries[curIdx]);updateRecCtr();}
+function updateRecCtr(){document.getElementById("rec-ctr").textContent=curIdx>=0?`Bài ${curIdx+1}/${entries.length}`:"Bài mới";}
+
+function renderList(){
+  const wrap=document.getElementById("entry-list-wrap");
+  document.getElementById("list-total").textContent=entries.length;
+  if(!entries.length){wrap.innerHTML='<div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Chưa có bài nào</div>';return;}
+  const isAdmin=ROLE==="admin";
+  const sorted=[...entries].sort((a,b)=>(a.mssv||"").localeCompare(b.mssv||""));
+  wrap.innerHTML=sorted.map(e=>{
+    let mc=0;if(CFG)for(let i=1;i<=CFG.nMCQ;i++)if(e.mcq&&e.mcq[i]&&e.mcq[i].length)mc++;
+    const totalYi=CFG?(CFG.tlList||[]).reduce((s,t)=>s+t.yi,0):0;
+    let tlOk=0;if(CFG)(CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++)if(e.tl&&e.tl[cau]&&e.tl[cau][YI[k]]&&e.tl[cau][YI[k]].trim())tlOk++;});
+    const ts=e.timestamp?new Date(e.timestamp).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}):"";
+    const delBtn=isAdmin?`<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();delEntry('${e.mssv}','${e.maDe}')" title="Xoá bài này">✕</button>`:`<span></span>`;
+    return`<div class="entry-row" onclick="editFromList('${e.mssv}','${e.maDe}')">
+      <span class="badge badge-blue">${e.maDe||"?"}</span>
+      <span style="font-weight:500">${e.mssv}</span>
+      <span style="color:var(--text2)">${e.hoTen||""}${e.lop?" · "+e.lop:""}</span>
+      <span>${mc}/${CFG?CFG.nMCQ:14}</span>
+      <span class="hide-sm">${totalYi?tlOk+"/"+totalYi:"—"}</span>
+      <span style="color:var(--text3)">${ts}</span>
+      ${delBtn}
+    </div>`;
+  }).join("");
+}
+
+function editFromList(mssv,maDe){
+  const idx=entries.findIndex(e=>e.mssv===mssv&&e.maDe===maDe);
+  if(idx<0)return;curIdx=idx;loadFormData(entries[idx]);updateRecCtr();showTab("form");
+}
+
+async function delEntry(mssv,maDe){
+  if(ROLE!=="admin"){toast("Chỉ admin mới có thể xoá!");return;}
+  if(!confirm(`Xoá bài của ${mssv} (mã đề ${maDe})?`))return;
+  try{
+    const r=await apiPost({action:"deleteEntry",group:CFG.group,mssv,maDe});
+    if(r.ok){entries=entries.filter(e=>!(e.mssv===mssv&&e.maDe===maDe));renderList();updateStatsBar();updateNavCount();toast(`Đã xoá ${mssv}`);}
+    else toast("Lỗi: "+(r.error||"?"));
+  }catch(e){toast("Lỗi mạng");}
+}
+
+async function clearAllEntries(){
+  if(ROLE!=="admin"){toast("Chỉ admin mới có thể xoá tất cả!");return;}
+  if(!confirm(`Xoá TẤT CẢ ${entries.length} bài của nhóm ${CFG.group}?\nThao tác không thể phục hồi!`))return;
+  try{
+    const r=await apiPost({action:"clearGroup",group:CFG.group});
+    if(r.ok){entries=[];renderList();updateStatsBar();updateNavCount();toast("Đã xoá tất cả");}
+  }catch(e){toast("Lỗi: "+e);}
+}
+
+function updateStatsBar(){
+  const bar=document.getElementById("stats-bar");if(!CFG){bar.innerHTML="";return;}
+  let mc=0;for(let i=1;i<=CFG.nMCQ;i++)if(mcqSt[i]&&mcqSt[i].length)mc++;
+  const roleBadge=ROLE==="admin"?'<span class="badge badge-purple">Admin</span>':ROLE==="staff"?'<span class="badge badge-green">Staff</span>':'<span class="badge">Chỉ xem</span>';
+  bar.innerHTML=`<div class="stat-pill">Đã lưu: <strong>${entries.length}</strong></div>
+    <div class="stat-pill">MCQ đang nhập: <strong>${mc}/${CFG.nMCQ}</strong></div>
+    <div class="stat-pill">Nhóm: <strong>${CFG.group}</strong></div>
+    <div class="stat-pill">Vai trò: ${roleBadge}</div>`;
+}
+function updateNavCount(){document.getElementById("nav-count").textContent=entries.length;document.getElementById("list-group").textContent=CFG?CFG.group:"—";document.getElementById("exp-cnt").textContent=entries.length;}
+
+// ════════════════════════════════════════════════════════════════════
+//  EXPORT CSV
+// ════════════════════════════════════════════════════════════════════
+function exportCSV(){
+  if(ROLE!=="admin"){toast("Chỉ admin mới có thể xuất CSV!");return;}
+  if(!entries.length){toast("Chưa có bài nào!");return;}if(!CFG)return;
+  const hdrs=["ma_de","mssv","ho_ten","lop"];
+  for(let i=1;i<=CFG.nMCQ;i++)hdrs.push("C"+i);
+  (CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++)hdrs.push(`TL${cau}_${YI[k]}_dap`);});
+  hdrs.push("nguoi_nhap","thoi_gian");
+  const rows=["\uFEFF"+hdrs.join(",")];
+  entries.forEach(e=>{
+    const r=[e.maDe,e.mssv,`"${(e.hoTen||"").replace(/"/g,'""')}"`,`"${(e.lop||"").replace(/"/g,'""')}"`];
+    for(let i=1;i<=CFG.nMCQ;i++)r.push(`"${(e.mcq&&e.mcq[i]?e.mcq[i].join(""):"")}"`);
+    (CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++)r.push(`"${(e.tl&&e.tl[cau]&&e.tl[cau][YI[k]])||""}"`);});
+    r.push(`"${e.nguoiNhap||""}"`,`"${e.timestamp||""}"`);
+    rows.push(r.join(","));
+  });
+  const blob=new Blob([rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");
+  const ts=new Date().toISOString().slice(0,16).replace(/[-T:]/g,"").slice(0,13);
+  a.href=url;a.download=`bai_lam_${CFG?CFG.group:"export"}_${ts}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast(`Xuất ${entries.length} bài → CSV`);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  TRA CỨU ĐIỂM
+// ════════════════════════════════════════════════════════════════════
+async function onShowLookup() {
+  await loadKyThiDropdown();
+  if (ROLE === "admin") loadKyThiAdminList();
+}
+
+async function loadKyThiDropdown() {
+  if (!API_URL) return;
+  try {
+    const r = await apiGet({ action: "listKyThi", token: ROLE === "admin" ? TOKEN : undefined });
+    const sel = document.getElementById("lk-ky");
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— Tất cả kỳ thi —</option>';
+    (r.kyList || []).forEach(ky => {
+      const opt = document.createElement("option");
+      opt.value = ky; opt.textContent = ky;
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  } catch(e) {}
+}
+
+async function lookupScore() {
+  const mssv = (document.getElementById("lk-mssv").value || "").trim().toUpperCase();
+  const ky   = (document.getElementById("lk-ky").value   || "").trim();
+  const resEl   = document.getElementById("lk-result");
+  const emptyEl = document.getElementById("lk-empty");
+  const cards   = document.getElementById("lk-cards");
+
+  if (!mssv) { toast("Vui lòng nhập MSSV!"); return; }
+  if (!API_URL) { toast("Chưa kết nối API!"); return; }
+
+  resEl.style.display = "none"; emptyEl.style.display = "none";
+  cards.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text3);font-size:12px">Đang tìm kiếm...</div>';
+  resEl.style.display = "";
+
+  try {
+    const params = { action: "lookupScore", mssv };
+    if (ky) params.ky = ky;
+    const r = await apiGet(params);
+
+    if (!r.ok) {
+      resEl.style.display = "none";
+      emptyEl.style.display = "";
+      document.getElementById("lk-empty-msg").textContent = r.error || "Không tìm thấy kết quả.";
+      return;
+    }
+
+    cards.innerHTML = r.results.map(item => _renderScoreCard(item)).join("");
+  } catch(e) {
+    cards.innerHTML = `<div style="padding:1rem;color:var(--red);font-size:12px">Lỗi kết nối: ${e}</div>`;
+  }
+}
+
+function _renderScoreCard(item) {
+  const diem  = parseFloat(item.tong_diem) || 0;
+  const pct   = Math.min(100, Math.round(diem * 10));
+  const color = diem >= 8.5 ? "#639922" : diem >= 7.0 ? "#185FA5" : diem >= 5.5 ? "#BA7517" : "#E24B4A";
+  const trackBg = diem >= 8.5 ? "#EAF3DE" : diem >= 7.0 ? "#E6F1FB" : diem >= 5.5 ? "#FAEEDA" : "#FCEBEB";
+
+  const rows = [
+    item.diem_mcq  !== undefined ? ["Điểm Phần A (MCQ)",     item.diem_mcq ] : null,
+    item.diem_tl   !== undefined ? ["Điểm Phần B (Tự luận)", item.diem_tl  ] : null,
+  ].filter(Boolean);
+
+  return `
+  <div class="card" style="margin-bottom:.6rem">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:15px;font-weight:500">${item.ho_ten||item.mssv}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">
+          ${item.mssv}${item.lop ? " · " + item.lop : ""}
+        </div>
+        <div style="margin-top:6px">
+          <span class="badge badge-blue" style="font-size:11px">${item.ky}</span>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:32px;font-weight:600;color:${color};line-height:1">${item.tong_diem}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">/ 10 điểm</div>
+        <div style="margin-top:6px">
+          <span style="background:${trackBg};color:${color};padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500">
+            ${item.xep_loai}
+          </span>
+        </div>
+      </div>
+    </div>
+    ${rows.length ? `
+    <div style="margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        ${rows.map(([label, val]) => `
+          <div>
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">${label}</div>
+            <div style="font-size:16px;font-weight:500;margin-top:1px">${val}</div>
+          </div>`).join("")}
+      </div>
+    </div>` : ""}
+    <div style="margin-top:10px">
+      <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .6s ease"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  UPLOAD KẾT QUẢ (admin)
+// ════════════════════════════════════════════════════════════════════
+async function uploadResults() {
+  if (ROLE !== "admin") { toast("Chỉ admin mới có thể upload!"); return; }
+  const ky      = (document.getElementById("up-ky").value || "").trim();
+  const file    = document.getElementById("up-file").files[0];
+  const replace = document.getElementById("up-replace").checked;
+  const progEl  = document.getElementById("up-progress");
+
+  if (!ky)   { toast("Nhập tên kỳ thi trước!"); return; }
+  if (!file) { toast("Chọn file trước!"); return; }
+
+  progEl.style.display = "";
+  progEl.textContent = "Đang đọc file...";
+
+  try {
+    const rows = await _parseResultFile(file);
+    if (!rows.length) { progEl.textContent = "Không đọc được dữ liệu từ file!"; return; }
+
+    progEl.textContent = `Đọc được ${rows.length} bản ghi, đang upload...`;
+    const r = await apiPost({ action: "uploadResults", ky, rows, replace });
+    if (r.ok) {
+      progEl.textContent = `✓ Đã upload ${r.inserted} kết quả cho kỳ "${ky}"`;
+      document.getElementById("up-file").value = "";
+      await loadKyThiDropdown();
+      await loadKyThiAdminList();
+      toast(`Upload thành công: ${r.inserted} SV · ${ky}`);
+    } else {
+      progEl.textContent = "Lỗi: " + (r.error || "?");
+    }
+  } catch(e) {
+    progEl.textContent = "Lỗi đọc file: " + e;
+  }
+}
+
+async function _parseResultFile(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".csv")) return _parseCSV(await file.text());
+  if (name.endsWith(".xlsx")) return _parseXLSX(await file.arrayBuffer());
+  throw new Error("Chỉ hỗ trợ .csv và .xlsx");
+}
+
+function _parseCSV(text) {
+  const lines  = text.replace(/\r/g,"").split("\n").filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const raw    = lines[0].replace(/^\uFEFF/,"");
+  const headers = raw.split(",").map(h => h.replace(/"/g,"").trim().toLowerCase());
+  return lines.slice(1).map(line => {
+    const vals = _splitCSVLine(line);
+    const obj  = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/"/g, "").trim(); });
+    return obj;
+  }).filter(r => r.mssv);
+}
+
+function _splitCSVLine(line) {
+  const res = []; let cur = ""; let inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === "," && !inQ) { res.push(cur); cur = ""; }
+    else cur += ch;
+  }
+  res.push(cur);
+  return res;
+}
+
+async function _parseXLSX(buf) {
+  // Dùng SheetJS nếu có, fallback về CSV sheet đầu
+  if (typeof XLSX === "undefined") {
+    throw new Error("Thư viện XLSX chưa load — hãy dùng file .csv");
+  }
+  const wb = XLSX.read(buf, { type: "array" });
+  // Tìm sheet chứa cột mssv/MSSV
+  let ws = null;
+  for (const name of wb.SheetNames) {
+    const data = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1 });
+    if (data[0] && data[0].some(h => String(h).toLowerCase().includes("mssv"))) {
+      ws = wb.Sheets[name]; break;
+    }
+  }
+  if (!ws) ws = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  // Normalise header keys to lowercase
+  return raw.map(row => {
+    const obj = {};
+    Object.keys(row).forEach(k => { obj[k.toLowerCase().trim()] = String(row[k]).trim(); });
+    return obj;
+  }).filter(r => r.mssv);
+}
+
+async function loadKyThiAdminList() {
+  if (ROLE !== "admin" || !API_URL) return;
+  const wrap = document.getElementById("ky-list-wrap");
+  wrap.innerHTML = "Đang tải...";
+  try {
+    const r = await apiGet({ action: "listKyThi" });
+    if (!r.ok || !r.kyList.length) {
+      wrap.innerHTML = '<span style="color:var(--text3)">Chưa có kỳ thi nào</span>'; return;
+    }
+    wrap.innerHTML = r.kyList.map(ky => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border)">
+        <span style="font-size:12px">${ky}</span>
+        <button class="btn btn-sm btn-danger" onclick="confirmDeleteKy('${ky}')">&#128465; Xoá</button>
+      </div>`).join("");
+  } catch(e) { wrap.innerHTML = "Lỗi tải danh sách"; }
+}
+
+async function confirmDeleteKy(ky) {
+  if (!confirm(`Xoá toàn bộ kết quả kỳ "${ky}"?\nThao tác không thể phục hồi!`)) return;
+  try {
+    const r = await apiPost({ action: "deleteKyThi", ky });
+    if (r.ok) {
+      toast(`Đã xoá ${r.deleted} bản ghi · ${ky}`);
+      await loadKyThiDropdown(); await loadKyThiAdminList();
+    } else toast("Lỗi: " + (r.error || "?"));
+  } catch(e) { toast("Lỗi mạng"); }
+}
+
+async function clearScoreCache() {
+  if (ROLE !== "admin") { toast("Chỉ admin mới có thể xoá cache!"); return; }
+  try {
+    const r = await apiPost({ action: "clearScoreCache" });
+    if (r.ok) toast("✓ Đã xoá cache — SV tra cứu sẽ nhận dữ liệu mới ngay");
+    else toast("Lỗi: " + (r.error || "?"));
+  } catch(e) { toast("Lỗi mạng: " + e); }
+}
+
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove("show"),2500);}
+document.addEventListener("keydown", e => {
+  // ── Phím tắt toàn cục ──────────────────────────────────────────
+  if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); saveEntry(); return; }
+  if((e.ctrlKey||e.metaKey) && e.key==="s")    { e.preventDefault(); if(ROLE==="admin")exportCSV(); else toast("Chỉ admin mới có thể xuất CSV!"); return; }
+
+  // ── Phím tắt MCQ bàn phím — chỉ khi đang ở chế độ kbd ─────────
+  if(iMode !== "kbd") return;
+  if(!CFG || (ROLE!=="admin" && ROLE!=="staff")) return;
+
+  // Không kích hoạt khi đang focus vào ô input text
+  const tag = document.activeElement ? document.activeElement.tagName : "";
+  if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+  const KEY_MAP = { a:"A", s:"B", d:"C", f:"D", e:"E" };  // e dùng khi 5 phương án
+  const key = e.key.toLowerCase();
+
+  if(KEY_MAP[key]){
+    e.preventDefault();
+    const opts  = OPTS.slice(0, CFG.optsN);
+    const optLetter = KEY_MAP[key];
+    if(opts.includes(optLetter)) toggleOpt(curQ, optLetter);
+    return;
+  }
+
+  if(e.key === "Enter" || e.key === "ArrowDown"){
+    e.preventDefault();
+    // Enter / ↓ → câu tiếp theo; nếu đã câu cuối → focus vào ô TL đầu tiên hoặc lưu
+    if(curQ < CFG.nMCQ){
+      setActiveQ(curQ + 1);
+    } else {
+      // Hết MCQ → nhảy xuống ô tự luận đầu tiên (nếu có)
+      const firstTL = document.querySelector("#tl-form-area input");
+      if(firstTL){ firstTL.focus(); clearActiveQ(); }
+    }
+    return;
+  }
+
+  if(e.key === "ArrowUp"){
+    e.preventDefault();
+    if(curQ > 1) setActiveQ(curQ - 1);
+    return;
+  }
+
+  if(e.key === "Backspace"){
+    e.preventDefault();
+    mcqSt[curQ] = [];
+    refreshBtnUI(curQ); syncBtnToTxt(curQ); updateStatsBar();
+    return;
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+//  INIT — ưu tiên: hardcode → ?api= param → sessionStorage
+// ════════════════════════════════════════════════════════════════════
+(function init(){
+  // 1. Hardcoded URL (thầy điền 1 lần trong code)
+  // 2. URL param: ?api=https://script.google.com/...
+  // 3. sessionStorage (đã đăng nhập trước đó trong tab này)
+  const paramUrl = new URLSearchParams(location.search).get("api") || "";
+  const resolvedUrl = HARDCODED_API_URL || paramUrl
+                      || sessionStorage.getItem("api_url") || "";
+
+  // Nếu đã có URL từ hardcode hoặc param → ẩn ô nhập URL
+  if (HARDCODED_API_URL || paramUrl) {
+    const urlField = document.getElementById("login-url").closest(".field");
+    if (urlField) urlField.style.display = "none";
+  }
+
+  // Điền sẵn vào ô (phòng khi vẫn hiển thị)
+  if (resolvedUrl) document.getElementById("login-url").value = resolvedUrl;
+
+  // Khôi phục session nếu đã đăng nhập trước đó
+  const savedToken = sessionStorage.getItem("token") || "";
+  const savedRole  = sessionStorage.getItem("role")  || "";
+  const savedUrl   = sessionStorage.getItem("api_url")|| "";
+
+  if (resolvedUrl && savedRole && savedUrl === resolvedUrl) {
+    // Cùng URL → khôi phục session, bỏ qua màn login
+    API_URL = resolvedUrl; TOKEN = savedToken; ROLE = savedRole;
+    document.getElementById("login-token").value = savedToken;
+    afterLogin();
+  } else if (resolvedUrl) {
+    // Có URL nhưng chưa đăng nhập → điền sẵn, chỉ cần nhập token
+    document.getElementById("login-url").value = resolvedUrl;
+  }
+
+  // Default TL config
+  if(!document.querySelector("[id^='tl'][id$='-cau']")){
+    addTLCfg({cau:15,yi:4,diem:3.0});
+    addTLCfg({cau:16,yi:4,diem:3.0});
+  }
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</body>
+</html>
