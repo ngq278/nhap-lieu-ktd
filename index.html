@@ -388,7 +388,7 @@ let ROLE      = "readonly";
 
 // ══════════════════════════════════════════════════════════════════
 //  ĐỔI DÒNG NÀY SAU KHI DEPLOY APPS SCRIPT (chỉ cần làm 1 lần)
-const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfycbzzTyrpYMmLjZkNSLch6XrCYRzf_ZgXgQKwblP_sg7RHZBsSwbVaO61wQNIzJmSxvEvQg/exec";
+const HARDCODED_API_URL = "";
 //  Ví dụ:
 //  const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfy.../exec";
 // ══════════════════════════════════════════════════════════════════   // "admin" | "staff" | "readonly"
@@ -551,11 +551,13 @@ function showTab(name) {
 //  API
 // ════════════════════════════════════════════════════════════════════
 // ── API helpers ───────────────────────────────────────────────────────
-// Apps Script redirect GET qua accounts.google.com lần đầu.
-// Cần follow=manual để bắt redirect, sau đó dùng URL mới.
-// POST: dùng Content-Type text/plain để tránh CORS preflight (OPTIONS).
+// Apps Script GET redirect: script.google.com → script.googleusercontent.com
+// Fix: lưu lại redirected URL sau request đầu tiên thành công,
+//      dùng URL đó cho tất cả request tiếp theo (tránh redirect mỗi lần).
+// POST: Content-Type text/plain → simple request, không có CORS preflight.
 
-const _FETCH_TIMEOUT = 15000; // 15s
+const _FETCH_TIMEOUT = 20000; // 20s
+let _RESOLVED_URL = ""; // URL sau redirect, tự cập nhật lần đầu
 
 function _fetchWithTimeout(url, opts) {
   const controller = new AbortController();
@@ -566,36 +568,51 @@ function _fetchWithTimeout(url, opts) {
 
 async function apiGet(params, retries = 2) {
   if (TOKEN) params.token = TOKEN;
-  const url = API_URL + "?" + new URLSearchParams(params);
+  // Dùng resolved URL nếu đã có (bỏ qua redirect overhead)
+  const base = _RESOLVED_URL || API_URL;
+  const url  = base + "?" + new URLSearchParams(params);
   for (let i = 0; i <= retries; i++) {
     try {
-      const r = await _fetchWithTimeout(url);
+      const r = await _fetchWithTimeout(url, { redirect: "follow" });
+      // Lưu lại URL sau redirect để dùng cho các lần sau
+      if (r.url && r.url !== url && !_RESOLVED_URL) {
+        // Lấy phần base (bỏ query string)
+        _RESOLVED_URL = r.url.split("?")[0];
+      }
       if (!r.ok) throw new Error("HTTP " + r.status);
       return await r.json();
     } catch(e) {
+      if (e.name === "AbortError") throw new Error("Hết thời gian chờ — kiểm tra URL API");
+      // Nếu lỗi khi dùng resolved URL, thử lại với URL gốc
+      if (_RESOLVED_URL && i === 0) { _RESOLVED_URL = ""; continue; }
       if (i === retries) throw e;
-      await new Promise(res => setTimeout(res, 800 * (i + 1)));
+      await new Promise(res => setTimeout(res, 1000 * (i + 1)));
     }
   }
 }
 
 async function apiPost(body, retries = 2) {
   if (TOKEN) body.token = TOKEN;
-  // Content-Type: text/plain → browser gửi "simple request"
-  // → không có CORS preflight (OPTIONS) → Apps Script nhận được ngay.
+  // Dùng resolved URL nếu đã có
+  const base = _RESOLVED_URL || API_URL;
   for (let i = 0; i <= retries; i++) {
     try {
-      const r = await _fetchWithTimeout(API_URL, {
-        method: "POST",
+      const r = await _fetchWithTimeout(base, {
+        method:  "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(body),
+        body:    JSON.stringify(body),
+        redirect: "follow",
       });
+      if (r.url && r.url !== base && !_RESOLVED_URL) {
+        _RESOLVED_URL = r.url.split("?")[0];
+      }
       if (!r.ok) throw new Error("HTTP " + r.status);
       return await r.json();
     } catch(e) {
-      if (e.name === "AbortError") throw new Error("Hết thời gian chờ (>15s) — kiểm tra lại URL API");
+      if (e.name === "AbortError") throw new Error("Hết thời gian chờ — kiểm tra URL API");
+      if (_RESOLVED_URL && i === 0) { _RESOLVED_URL = ""; continue; }
       if (i === retries) throw e;
-      await new Promise(res => setTimeout(res, 800 * (i + 1)));
+      await new Promise(res => setTimeout(res, 1000 * (i + 1)));
     }
   }
 }
