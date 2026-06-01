@@ -275,7 +275,8 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   <div class="actions">
     <button class="btn btn-danger btn-sm" id="btn-clear" onclick="clearForm()">&#128465; Xoá form</button>
     <button class="btn btn-sm" id="btn-save" onclick="saveEntry()">&#128190; Lưu (Ctrl+Enter)</button>
-    <button class="btn btn-primary" id="btn-export" onclick="exportCSV()">&#8681; Xuất CSV (<span id="exp-cnt">0</span>)</button>
+    <button class="btn btn-sm" id="btn-export-csv" onclick="exportCSV()" title="Xuất file CSV (legacy)">&#8681; CSV</button>
+    <button class="btn btn-primary" id="btn-export" onclick="exportXLSX()">&#8681; Xuất Excel (<span id="exp-cnt">0</span>)</button>
   </div>
 </div>
 
@@ -506,7 +507,7 @@ function applyRoleUI() {
   // Xuất CSV: chỉ admin
   const btnExport = document.getElementById("btn-export");
   btnExport.disabled = !isAdmin;
-  if (!isAdmin) { btnExport.title = "Chỉ admin mới có thể xuất CSV"; btnExport.classList.remove("btn-primary"); }
+  if (!isAdmin) { btnExport.title = "Chỉ admin mới có thể xuất Excel"; btnExport.classList.remove("btn-primary"); }
 
   // Lưu / xoá form: cần staff hoặc admin
   document.getElementById("btn-save").disabled  = !canWrite;
@@ -947,10 +948,10 @@ function updateStatsBar(){
 function updateNavCount(){document.getElementById("nav-count").textContent=entries.length;document.getElementById("list-group").textContent=CFG?CFG.group:"—";document.getElementById("exp-cnt").textContent=entries.length;}
 
 // ════════════════════════════════════════════════════════════════════
-//  EXPORT CSV
+//  EXPORT CSV (legacy)
 // ════════════════════════════════════════════════════════════════════
 function exportCSV(){
-  if(ROLE!=="admin"){toast("Chỉ admin mới có thể xuất CSV!");return;}
+  if(ROLE!=="admin"){toast("Chỉ admin mới có thể xuất!");return;}
   if(!entries.length){toast("Chưa có bài nào!");return;}if(!CFG)return;
   const hdrs=["ma_de","mssv","ho_ten","lop"];
   for(let i=1;i<=CFG.nMCQ;i++)hdrs.push("C"+i);
@@ -959,8 +960,7 @@ function exportCSV(){
   const rows=["\uFEFF"+hdrs.join(",")];
   entries.forEach(e=>{
     const r=[e.maDe,e.mssv,`"${(e.hoTen||"").replace(/"/g,'""')}"`,`"${(e.lop||"").replace(/"/g,'""')}"`];
-    for(let i=1;i<=CFG.nMCQ;i++)r.push(`"${(e.mcq&&e.mcq[i]?e.mcq[i].join(""):"")}"`);
-    (CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++)r.push(`"${(e.tl&&e.tl[cau]&&e.tl[cau][YI[k]])||""}"`);});
+    for(let i=1;i<=CFG.nMCQ;i++)r.push(`"${(e.mcq&&e.mcq[i]?e.mcq[i].join(""):"")}"`);    (CFG.tlList||[]).forEach(({cau,yi})=>{for(let k=0;k<yi;k++)r.push(`"${(e.tl&&e.tl[cau]&&e.tl[cau][YI[k]])||""}"`)});
     r.push(`"${e.nguoiNhap||""}"`,`"${e.timestamp||""}"`);
     rows.push(r.join(","));
   });
@@ -970,6 +970,104 @@ function exportCSV(){
   a.href=url;a.download=`bai_lam_${CFG?CFG.group:"export"}_${ts}.csv`;
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   toast(`Xuất ${entries.length} bài → CSV`);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  EXPORT EXCEL (.xlsx) — định dạng giống Google Form
+//  Cột: Dấu thời gian | Mã đề | MSSV | Họ và tên | Lớp
+//       | Câu 1..N (MCQ)
+//       | Câu X — ý (a)/(b)/... — Đáp số SV  (tự luận)
+//       | Người nhập
+// ════════════════════════════════════════════════════════════════════
+function exportXLSX(){
+  if(ROLE!=="admin"){toast("Chỉ admin mới có thể xuất Excel!");return;}
+  if(!entries.length){toast("Chưa có bài nào!");return;}
+  if(!CFG){toast("Chưa có cấu hình!");return;}
+  if(typeof XLSX==="undefined"){toast("Thư viện XLSX chưa load, vui lòng thử lại sau!");return;}
+
+  // ── Xây dựng header row ─────────────────────────────────────────
+  const headers=["Dấu thời gian","Mã đề","MSSV","Họ và tên","Lớp"];
+  for(let i=1;i<=CFG.nMCQ;i++) headers.push(`Câu ${i}`);
+  (CFG.tlList||[]).forEach(({cau,yi})=>{
+    for(let k=0;k<yi;k++){
+      const label=["(a)","(b)","(c)","(d)","(e)","(f)"][k]||\`(${k+1})\`;
+      headers.push(\`Câu ${cau} — ý ${label} — Đáp số SV\`);
+    }
+  });
+  headers.push("Người nhập");
+
+  // ── Xây dựng data rows ───────────────────────────────────────────
+  // Timestamp từ Apps Script có thể là chuỗi ISO hoặc số serial Excel
+  // Chuẩn hoá về dạng chuỗi "DD/MM/YYYY HH:MM:SS" để dễ đọc
+  function fmtTs(ts){
+    if(!ts) return "";
+    // Nếu là số (Excel serial date)
+    const n=parseFloat(ts);
+    if(!isNaN(n)&&n>40000&&n<60000){
+      // Excel serial → JS Date (Excel epoch: 1/1/1900, JS epoch: 1/1/1970)
+      // 25569 = offset ngày từ 1/1/1900 đến 1/1/1970
+      const ms=(n-25569)*86400*1000;
+      const d=new Date(ms);
+      return d.toLocaleString("vi-VN",{timeZone:"Asia/Ho_Chi_Minh"});
+    }
+    // Chuỗi ISO → định dạng lại
+    try{
+      const d=new Date(ts);
+      if(!isNaN(d)) return d.toLocaleString("vi-VN",{timeZone:"Asia/Ho_Chi_Minh"});
+    }catch(e){}
+    return String(ts);
+  }
+
+  const dataRows=entries.map(e=>{
+    const row=[
+      fmtTs(e.timestamp),
+      e.maDe||"",
+      e.mssv||"",
+      e.hoTen||"",
+      e.lop||"",
+    ];
+    // MCQ: ghép các đáp án đã chọn — "A", "B,C", v.v.
+    for(let i=1;i<=CFG.nMCQ;i++){
+      const ans=e.mcq&&e.mcq[i]?e.mcq[i].join(", "):"";
+      row.push(ans);
+    }
+    // Tự luận
+    (CFG.tlList||[]).forEach(({cau,yi})=>{
+      for(let k=0;k<yi;k++){
+        const yi_key=YI[k];
+        const val=(e.tl&&e.tl[cau]&&e.tl[cau][yi_key]!=null)?e.tl[cau][yi_key]:"";
+        // Thử parse về số nếu có thể (để Excel nhận dạng số)
+        const num=parseFloat(val);
+        row.push((!isNaN(num)&&String(val).trim()!=="") ? num : val);
+      }
+    });
+    row.push(e.nguoiNhap||"");
+    return row;
+  });
+
+  // ── Tạo workbook ─────────────────────────────────────────────────
+  const wb=XLSX.utils.book_new();
+  const wsData=[headers,...dataRows];
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+
+  // Định dạng độ rộng cột tự động
+  const colWidths=headers.map((h,ci)=>{
+    let max=String(h).length;
+    dataRows.forEach(r=>{ const v=String(r[ci]||""); if(v.length>max)max=v.length; });
+    return {wch:Math.min(Math.max(max+2,8),40)};
+  });
+  ws["!cols"]=colWidths;
+
+  // Đóng băng hàng tiêu đề
+  ws["!freeze"]={xSplit:0,ySplit:1};
+
+  const ts=new Date(new Date().getTime()+7*60*60*1000).toISOString().slice(0,16).replace(/[-T:]/g,"").slice(0,13);
+  const sheetName=(CFG.group||"BaiLam").slice(0,31); // Sheet name max 31 chars
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+
+  const filename=\`bai_lam_${CFG?CFG.group:"export"}_\${ts}.xlsx\`;
+  XLSX.writeFile(wb,filename);
+  toast(\`Xuất ${entries.length} bài → Excel ✓\`);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1217,7 +1315,7 @@ function toast(msg){const el=document.getElementById("toast");el.textContent=msg
 document.addEventListener("keydown", e => {
   // ── Phím tắt toàn cục ──────────────────────────────────────────
   if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); saveEntry(); return; }
-  if((e.ctrlKey||e.metaKey) && e.key==="s")    { e.preventDefault(); if(ROLE==="admin")exportCSV(); else toast("Chỉ admin mới có thể xuất CSV!"); return; }
+  if((e.ctrlKey||e.metaKey) && e.key==="s")    { e.preventDefault(); if(ROLE==="admin")exportXLSX(); else toast("Chỉ admin mới có thể xuất Excel!"); return; }
 
   // ── Phím tắt MCQ bàn phím — chỉ khi đang ở chế độ kbd ─────────
   if(iMode !== "kbd") return;
