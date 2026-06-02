@@ -1285,7 +1285,7 @@ async function _parseXLSX(buf) {
   if (typeof XLSX === "undefined") {
     throw new Error("Thư viện XLSX chưa load — hãy dùng file .csv");
   }
-  const wb = XLSX.read(buf, { type: "array" });
+  const wb = XLSX.read(buf, { type: "array", cellFormula: false, cellNF: false });
   // Tìm sheet chứa cột mssv/MSSV
   let ws = null;
   for (const name of wb.SheetNames) {
@@ -1296,10 +1296,56 @@ async function _parseXLSX(buf) {
   }
   if (!ws) ws = wb.Sheets[wb.SheetNames[0]];
   const raw = XLSX.utils.sheet_to_json(ws, { defval: "" });
-  // Normalise header keys to lowercase
+
+  // Bảng ánh xạ tên cột tiếng Việt (grade_exam.py) → tên field chuẩn
+  const COL_MAP = {
+    // Tiếng Anh (lowercase) — format cũ
+    "mssv": "mssv", "ho_ten": "ho_ten", "lop": "lop",
+    "diem_mcq": "diem_mcq", "diem_tl": "diem_tl",
+    "tong_diem": "tong_diem", "xep_loai": "xep_loai",
+    // Tiếng Việt — output của grade_exam.py / ket_qua_*.xlsx
+    "họ và tên": "ho_ten", "ho va ten": "ho_ten",
+    "lớp": "lop",
+    "điểm tn": "diem_mcq", "diem tn": "diem_mcq",
+    "tl tự động": "diem_tl", "tl tu dong": "diem_tl",
+    "tl thủ công\n(tối đa 2đ)": "diem_tl_thu_cong",
+    "tổng điểm": "tong_diem", "tong diem": "tong_diem",
+    "xếp loại": "xep_loai", "xep loai": "xep_loai",
+  };
+
   return raw.map(row => {
     const obj = {};
-    Object.keys(row).forEach(k => { obj[k.toLowerCase().trim()] = String(row[k]).trim(); });
+    Object.keys(row).forEach(k => {
+      const key = k.toLowerCase().trim();
+      const mapped = COL_MAP[key] || key;
+      const val = row[k];
+      // Nếu cell là công thức chưa tính (chuỗi bắt đầu bằng =), bỏ qua
+      const strVal = String(val ?? "").trim();
+      obj[mapped] = strVal.startsWith("=") ? "" : strVal;
+    });
+    // MSSV: ưu tiên field "mssv", fallback tìm key có chứa "mssv"
+    if (!obj.mssv) {
+      const mssvKey = Object.keys(row).find(k => k.toLowerCase().includes("mssv"));
+      if (mssvKey) obj.mssv = String(row[mssvKey]).trim();
+    }
+    // Nếu tong_diem là công thức / rỗng → tính lại từ mcq + tl
+    if (!obj.tong_diem || obj.tong_diem === "") {
+      const mcq = parseFloat(obj.diem_mcq) || 0;
+      const tl  = parseFloat(obj.diem_tl)  || 0;
+      const thu = parseFloat(obj.diem_tl_thu_cong) || 0;
+      const tong = mcq + tl + thu;
+      obj.tong_diem = tong > 0 ? String(Math.round(Math.min(10, tong) * 100) / 100) : "";
+    }
+    // Chuẩn hóa xep_loai: tiếng Anh → tiếng Việt
+    const XEP_MAP = {
+      "diamond": "Giỏi", "platinum": "Giỏi", "gold": "Khá",
+      "silver": "Trung bình", "bronze": "Trung bình yếu",
+      "iron": "Yếu", "plastic": "Yếu",
+    };
+    if (obj.xep_loai) {
+      const mapped = XEP_MAP[obj.xep_loai.toLowerCase()];
+      if (mapped) obj.xep_loai = mapped;
+    }
     return obj;
   }).filter(r => r.mssv);
 }
