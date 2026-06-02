@@ -1157,55 +1157,69 @@ async function lookupScore() {
 }
 
 function _renderScoreCard(item) {
-  const diem  = parseFloat(item.tong_diem) || 0;
-  const pct   = Math.min(100, Math.round(diem * 10));
-  const color = diem >= 8.5 ? "#639922" : diem >= 7.0 ? "#185FA5" : diem >= 5.5 ? "#BA7517" : "#E24B4A";
+  const diem    = parseFloat(item.tong_diem) || 0;
+  const pct     = Math.min(100, Math.round(diem * 10));
+  const color   = diem >= 8.5 ? "#639922" : diem >= 7.0 ? "#185FA5" : diem >= 5.5 ? "#BA7517" : "#E24B4A";
   const trackBg = diem >= 8.5 ? "#EAF3DE" : diem >= 7.0 ? "#E6F1FB" : diem >= 5.5 ? "#FAEEDA" : "#FCEBEB";
 
-  const rows = [
-    item.diem_mcq  !== undefined ? ["Điểm Phần A (MCQ)",     item.diem_mcq ] : null,
-    item.diem_tl   !== undefined ? ["Điểm Phần B (Tự luận)", item.diem_tl  ] : null,
+  // Các field chi tiết (chỉ hiện nếu có dữ liệu)
+  const scoreRows = [
+    item.diem_mcq   != null && item.diem_mcq   !== "" ? ["Điểm Phần A (MCQ)",        item.diem_mcq]   : null,
+    item.diem_tl    != null && item.diem_tl    !== "" ? ["Điểm Phần B (Tự luận TC)", item.diem_tl]    : null,
+    item.diem_tl_thu != null && item.diem_tl_thu > 0  ? ["Điểm TL Thủ công (+)",     item.diem_tl_thu]: null,
   ].filter(Boolean);
+
+  const metaRows = [
+    item.ma_de     ? ["Mã đề",        item.ma_de]     : null,
+    item.dung_tong ? ["Đúng / Tổng",  item.dung_tong] : null,
+    item.lop       ? ["Lớp",          item.lop]       : null,
+    item.nguoi_nhap && item.nguoi_nhap !== "NGQ" ? ["Người nhập", item.nguoi_nhap] : null,
+  ].filter(Boolean);
+
+  const _cell = (label, val) => `
+    <div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">${label}</div>
+      <div style="font-size:15px;font-weight:500;margin-top:1px">${val}</div>
+    </div>`;
 
   return `
   <div class="card" style="margin-bottom:.6rem">
+    <!-- Header: tên + điểm -->
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
       <div>
-        <div style="font-size:15px;font-weight:500">${item.ho_ten||item.mssv}</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">
-          ${item.mssv}${item.lop ? " · " + item.lop : ""}
-        </div>
-        <div style="margin-top:6px">
-          <span class="badge badge-blue" style="font-size:11px">${item.ky}</span>
-        </div>
+        <div style="font-size:15px;font-weight:500">${item.ho_ten || item.mssv}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${item.mssv}</div>
+        ${item.ky ? `<div style="margin-top:6px"><span class="badge badge-blue" style="font-size:11px">${item.ky}</span></div>` : ""}
       </div>
       <div style="text-align:right">
-        <div style="font-size:32px;font-weight:600;color:${color};line-height:1">${item.tong_diem}</div>
+        <div style="font-size:36px;font-weight:700;color:${color};line-height:1">${diem % 1 === 0 ? diem.toFixed(1) : item.tong_diem}</div>
         <div style="font-size:11px;color:var(--text2);margin-top:2px">/ 10 điểm</div>
         <div style="margin-top:6px">
-          <span style="background:${trackBg};color:${color};padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500">
-            ${item.xep_loai}
-          </span>
+          <span style="background:${trackBg};color:${color};padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600">${item.xep_loai}</span>
         </div>
       </div>
     </div>
-    ${rows.length ? `
-    <div style="margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
-        ${rows.map(([label, val]) => `
-          <div>
-            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">${label}</div>
-            <div style="font-size:16px;font-weight:500;margin-top:1px">${val}</div>
-          </div>`).join("")}
-      </div>
-    </div>` : ""}
+
+    <!-- Thanh điểm -->
     <div style="margin-top:10px">
       <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .6s ease"></div>
       </div>
     </div>
+
+    <!-- Điểm thành phần -->
+    ${scoreRows.length ? `
+    <div style="margin-top:12px;padding-top:10px;border-top:0.5px solid var(--border)">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Chi tiết điểm</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap">${scoreRows.map(([l,v]) => _cell(l,v)).join("")}</div>
+    </div>` : ""}
+
+    <!-- Thông tin phụ -->
+    ${metaRows.length ? `
+    <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;color:var(--text2)">${metaRows.map(([l,v]) => _cell(l,v)).join("")}</div>
+    </div>` : ""}
   </div>`;
-}
 
 // ════════════════════════════════════════════════════════════════════
 //  UPLOAD KẾT QUẢ (admin)
@@ -1227,17 +1241,25 @@ async function uploadResults() {
     const rows = await _parseResultFile(file);
     if (!rows.length) { progEl.textContent = "Không đọc được dữ liệu từ file!"; return; }
 
-    // Upload theo batch (mỗi batch ~40 SV) để né giới hạn độ dài URL của GET.
-    const BATCH = 40;
+    // Chỉ giữ các field cần thiết trước khi gửi (bỏ c1–c15, stt, thời gian... để URL ngắn)
+    const KEEP = ["mssv","ho_ten","lop","diem_mcq","diem_tl","tong_diem","xep_loai"];
+    const slimRows = rows.map(r => {
+      const obj = {};
+      KEEP.forEach(k => { if (r[k] !== undefined) obj[k] = r[k]; });
+      return obj;
+    });
+
+    // Batch nhỏ (8 SV) để payload URL < 2048 ký tự khi dùng GET fallback
+    const BATCH = 8;
     let totalInserted = 0;
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const chunk = rows.slice(i, i + BATCH);
+    for (let i = 0; i < slimRows.length; i += BATCH) {
+      const chunk = slimRows.slice(i, i + BATCH);
       // replace chỉ áp dụng cho batch ĐẦU TIÊN (xoá kỳ cũ 1 lần), các batch sau append
       const useReplace = replace && i === 0;
-      progEl.textContent = `Đang upload ${i + 1}–${Math.min(i + BATCH, rows.length)} / ${rows.length}...`;
+      progEl.textContent = `Đang upload ${i + 1}–${Math.min(i + BATCH, slimRows.length)} / ${slimRows.length}...`;
       const r = await apiPost({ action: "uploadResults", ky, rows: chunk, replace: useReplace });
       if (!r.ok) { progEl.textContent = "Lỗi: " + (r.error || "?"); return; }
-      totalInserted += (r.inserted || chunk.length);
+      totalInserted += (r.inserted ?? chunk.length);
     }
     progEl.textContent = `✓ Đã upload ${totalInserted} kết quả cho kỳ "${ky}"`;
     document.getElementById("up-file").value = "";
